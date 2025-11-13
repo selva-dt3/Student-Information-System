@@ -77,7 +77,8 @@ export function validateStudent(student) {
 
 /** Build common select order clause */
 function baseSelect(query) {
-  return query.select('*').order('created_at', { ascending: false });
+  // Keep base select focused on the select part. Ordering is performed after filters are applied.
+  return query.select('*');
 }
 
 // PUBLIC_INTERFACE
@@ -109,20 +110,20 @@ export async function listStudentsFiltered(filters = {}, options = {}) {
   /**
    * Returns filtered list of students using Supabase query operators.
    * Filters supported:
-   * - q: free text applied to first_name, last_name, email via ilike
+   * - q: free text applied to first_name, last_name, email via ilike (OR)
    * - first_name: ilike
    * - last_name: ilike
    * - email: ilike
-   * - grade_level: eq (exact) if provided; if not exact preference, users can use q for broad match
+   * - grade_level: eq (exact)
    * - dob_start: date_of_birth >= YYYY-MM-DD
    * - dob_end: date_of_birth <= YYYY-MM-DD
    *
    * Options:
    * - page: number (1-based)
    * - pageSize: number
+   * - withCount: boolean (default false)
    *
    * Returns: { data: Student[], page, pageSize, total: number|null }
-   * Note: Supabase .range() with count can be used; here we keep count minimal for perf and return null unless requested.
    */
   let supabase;
   try {
@@ -137,12 +138,13 @@ export async function listStudentsFiltered(filters = {}, options = {}) {
   const from = Math.max(0, (page - 1) * pageSize);
   const to = Math.max(from, from + pageSize - 1);
 
-  let query = supabase.from(TABLE);
+  // Start from a PostgRESTFilterBuilder by calling select() immediately.
+  let query = supabase.from(TABLE).select('*');
 
-  // Free text 'q' → ilike on first_name, last_name, email using OR
+  // Build OR clause for free-text query across first_name, last_name, email.
+  let orClause = '';
   if (f.q) {
-    // Use PostgREST or filter with .or
-    const orClause = [
+    orClause = [
       `first_name.ilike.%${escapeLike(f.q)}%`,
       `last_name.ilike.%${escapeLike(f.q)}%`,
       `email.ilike.%${escapeLike(f.q)}%`,
@@ -150,6 +152,7 @@ export async function listStudentsFiltered(filters = {}, options = {}) {
     query = query.or(orClause);
   }
 
+  // Compose additional filters via supported chaining
   if (f.first_name) query = query.ilike('first_name', `%${escapeLike(f.first_name)}%`);
   if (f.last_name) query = query.ilike('last_name', `%${escapeLike(f.last_name)}%`);
   if (f.email) query = query.ilike('email', `%${escapeLike(f.email)}%`);
@@ -158,8 +161,8 @@ export async function listStudentsFiltered(filters = {}, options = {}) {
   if (f.dob_start) query = query.gte('date_of_birth', f.dob_start);
   if (f.dob_end) query = query.lte('date_of_birth', f.dob_end);
 
-  // Order and pagination
-  query = baseSelect(query).range(from, to);
+  // Order and pagination must be applied after filters; or() has already been applied above.
+  query = query.order('created_at', { ascending: false }).range(from, to);
 
   const start = Date.now();
   const { data, error, count } = withCount
@@ -168,17 +171,25 @@ export async function listStudentsFiltered(filters = {}, options = {}) {
   const duration = Date.now() - start;
 
   if (error) {
-    log('ERROR', 'students.filter_failed', { duration_ms: duration, error: error.message });
+    log('ERROR', 'students.filter_failed', {
+      duration_ms: duration,
+      error: error.message,
+      // Show the OR clause only in error context (non-PII, filter structure diagnostic)
+      or_preview: orClause || null,
+    });
     throw new Error('Failed to fetch filtered students.');
   }
 
-  // Keep logs minimal in production-like builds
-  if ((process.env.REACT_APP_NODE_ENV || process.env.NODE_ENV) !== 'production') {
+  // Development-only diagnostics for final OR string and pagination
+  const env = (process.env.REACT_APP_NODE_ENV || process.env.NODE_ENV) || 'development';
+  if (env !== 'production') {
     log('INFO', 'students.filter_success', {
       duration_ms: duration,
-      page, pageSize,
+      page,
+      pageSize,
       returned: data?.length || 0,
-      count: withCount ? count ?? null : null
+      count: withCount ? count ?? null : null,
+      or_preview: orClause || null,
     });
   }
 
