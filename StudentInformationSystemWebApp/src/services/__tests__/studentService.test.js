@@ -30,7 +30,7 @@ jest.mock("../errorMapping", () => {
 });
 
 const { getSupabaseClient } = require("../../lib/supabaseClient");
-const { logMinimalError } = require("../errorMapping);
+const { logMinimalError } = require("../errorMapping");
 
 function makeFromMock() {
   // Build a chainable supabase.from("students") mock with methods select/order/range/eq/update/insert/delete/single
@@ -48,10 +48,11 @@ function makeFromMock() {
 
 describe("studentService", () => {
   let supabaseMock;
+  let fromChain;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    const fromChain = makeFromMock();
+    fromChain = makeFromMock();
     supabaseMock = {
       from: jest.fn().mockReturnValue(fromChain),
     };
@@ -60,8 +61,7 @@ describe("studentService", () => {
 
   describe("listStudents", () => {
     it("returns data and count on success", async () => {
-      const chain = supabaseMock.from.mock.results[0].value;
-      chain.range.mockResolvedValueOnce({
+      fromChain.range.mockResolvedValueOnce({
         data: [{ id: 1, name: "John", email: "j@example.com" }],
         error: null,
         count: 5,
@@ -69,15 +69,14 @@ describe("studentService", () => {
 
       const res = await listStudents({ limit: 10, offset: 0 });
       expect(supabaseMock.from).toHaveBeenCalledWith("students");
-      expect(chain.select).toHaveBeenCalledWith("*", { count: "exact" });
-      expect(chain.order).toHaveBeenCalled();
-      expect(chain.range).toHaveBeenCalledWith(0, 9);
+      expect(fromChain.select).toHaveBeenCalledWith("*", { count: "exact" });
+      expect(fromChain.order).toHaveBeenCalled();
+      expect(fromChain.range).toHaveBeenCalledWith(0, 9);
       expect(res).toEqual({ data: [{ id: 1, name: "John", email: "j@example.com" }], count: 5 });
     });
 
     it("throws mapped error on failure", async () => {
-      const chain = supabaseMock.from.mock.results[0].value;
-      chain.range.mockResolvedValueOnce({ data: null, error: { code: "42501", message: "permission denied" }, count: null });
+      fromChain.range.mockResolvedValueOnce({ data: null, error: { code: "42501", message: "permission denied" }, count: null });
 
       await expect(listStudents()).rejects.toThrow(/You do not have permission/i);
       expect(logMinimalError).toHaveBeenCalled();
@@ -86,14 +85,13 @@ describe("studentService", () => {
 
   describe("getStudentById", () => {
     it("fetches single student", async () => {
-      const chain = supabaseMock.from.mock.results[0].value;
-      chain.single.mockResolvedValueOnce({ data: { id: "abc", email: "a@b.com" }, error: null });
+      fromChain.single.mockResolvedValueOnce({ data: { id: "abc", email: "a@b.com" }, error: null });
 
       const data = await getStudentById("abc");
       expect(supabaseMock.from).toHaveBeenCalledWith("students");
-      expect(chain.select).toHaveBeenCalledWith("*");
-      expect(chain.eq).toHaveBeenCalledWith("id", "abc");
-      expect(chain.single).toHaveBeenCalled();
+      expect(fromChain.select).toHaveBeenCalledWith("*");
+      expect(fromChain.eq).toHaveBeenCalledWith("id", "abc");
+      expect(fromChain.single).toHaveBeenCalled();
       expect(data).toEqual({ id: "abc", email: "a@b.com" });
     });
 
@@ -102,8 +100,7 @@ describe("studentService", () => {
     });
 
     it("maps error properly", async () => {
-      const chain = supabaseMock.from.mock.results[0].value;
-      chain.single.mockResolvedValueOnce({ data: null, error: { code: "23502", message: "not null violation" } });
+      fromChain.single.mockResolvedValueOnce({ data: null, error: { code: "23502", message: "not null violation" } });
       await expect(getStudentById("x")).rejects.toThrow(/Required data is missing/i);
       expect(logMinimalError).toHaveBeenCalled();
     });
@@ -111,15 +108,14 @@ describe("studentService", () => {
 
   describe("createStudent", () => {
     it("inserts and returns created row", async () => {
-      const chain = supabaseMock.from.mock.results[0].value;
-      chain.single.mockResolvedValueOnce({ data: { id: "1", email: "a@b.com" }, error: null });
+      fromChain.single.mockResolvedValueOnce({ data: { id: "1", email: "a@b.com" }, error: null });
 
       const payload = { firstName: "A", lastName: "B", email: "a@b.com" };
       const res = await createStudent(payload);
       expect(supabaseMock.from).toHaveBeenCalledWith("students");
-      expect(chain.insert).toHaveBeenCalledWith(payload);
-      expect(chain.select).toHaveBeenCalled();
-      expect(chain.single).toHaveBeenCalled();
+      expect(fromChain.insert).toHaveBeenCalledWith(payload);
+      expect(fromChain.select).toHaveBeenCalled();
+      expect(fromChain.single).toHaveBeenCalled();
       expect(res).toEqual({ id: "1", email: "a@b.com" });
     });
 
@@ -128,8 +124,7 @@ describe("studentService", () => {
     });
 
     it("maps insert error", async () => {
-      const chain = supabaseMock.from.mock.results[0].value;
-      chain.single.mockResolvedValueOnce({ data: null, error: { code: "23505", message: "duplicate key value violates unique constraint" } });
+      fromChain.single.mockResolvedValueOnce({ data: null, error: { code: "23505", message: "duplicate key value violates unique constraint" } });
 
       await expect(createStudent({ email: "dup@e.com" })).rejects.toThrow(/must be unique/i);
       expect(logMinimalError).toHaveBeenCalled();
@@ -138,12 +133,11 @@ describe("studentService", () => {
 
   describe("updateStudent", () => {
     it("updates and returns updated row", async () => {
-      const chain = supabaseMock.from.mock.results[0].value;
-      chain.single.mockResolvedValueOnce({ data: { id: "1", email: "new@e.com" }, error: null });
+      fromChain.single.mockResolvedValueOnce({ data: { id: "1", email: "new@e.com" }, error: null });
 
       const res = await updateStudent("1", { email: "new@e.com" });
-      expect(chain.update).toHaveBeenCalledWith({ email: "new@e.com" });
-      expect(chain.eq).toHaveBeenCalledWith("id", "1");
+      expect(fromChain.update).toHaveBeenCalledWith({ email: "new@e.com" });
+      expect(fromChain.eq).toHaveBeenCalledWith("id", "1");
       expect(res).toEqual({ id: "1", email: "new@e.com" });
     });
 
@@ -153,8 +147,7 @@ describe("studentService", () => {
     });
 
     it("maps update error", async () => {
-      const chain = supabaseMock.from.mock.results[0].value;
-      chain.single.mockResolvedValueOnce({ data: null, error: { code: "42501", message: "permission denied" } });
+      fromChain.single.mockResolvedValueOnce({ data: null, error: { code: "42501", message: "permission denied" } });
 
       await expect(updateStudent("1", { email: "x@y.com" })).rejects.toThrow(/do not have permission/i);
       expect(logMinimalError).toHaveBeenCalled();
@@ -163,14 +156,13 @@ describe("studentService", () => {
 
   describe("deleteStudent", () => {
     it("deletes by id and returns true", async () => {
-      const chain = supabaseMock.from.mock.results[0].value;
-      chain.delete.mockReturnValueOnce(chain);
-      chain.eq.mockResolvedValueOnce({ error: null });
+      fromChain.delete.mockReturnValueOnce(fromChain);
+      fromChain.eq.mockResolvedValueOnce({ error: null });
 
       const res = await deleteStudent("1");
       expect(supabaseMock.from).toHaveBeenCalledWith("students");
-      expect(chain.delete).toHaveBeenCalled();
-      expect(chain.eq).toHaveBeenCalledWith("id", "1");
+      expect(fromChain.delete).toHaveBeenCalled();
+      expect(fromChain.eq).toHaveBeenCalledWith("id", "1");
       expect(res).toBe(true);
     });
 
@@ -179,8 +171,7 @@ describe("studentService", () => {
     });
 
     it("maps delete error", async () => {
-      const chain = supabaseMock.from.mock.results[0].value;
-      chain.eq.mockResolvedValueOnce({ error: { code: "42501", message: "permission denied" } });
+      fromChain.eq.mockResolvedValueOnce({ error: { code: "42501", message: "permission denied" } });
 
       await expect(deleteStudent("2")).rejects.toThrow(/do not have permission/i);
       expect(logMinimalError).toHaveBeenCalled();
