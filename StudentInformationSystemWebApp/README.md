@@ -7,7 +7,7 @@ A lightweight single-page app to manage students with a responsive, green-themed
 - Students list with pagination, search, and inline actions
 - Create and edit forms with client-side validation
 - Delete with confirmation dialog
-- Optional realtime placeholder gated by feature flag
+- Optional realtime updates gated by feature flag
 - Theming with light/dark toggle
 - Minimal dependencies
 
@@ -22,7 +22,7 @@ Set:
 - REACT_APP_SUPABASE_ANON_KEY
 
 Optional:
-- REACT_APP_FEATURE_FLAGS=realtime (enables placeholder hook for future live updates)
+- REACT_APP_FEATURE_FLAGS=realtime (enables live updates via Supabase Realtime for students table)
 
 2) Install and run:
 ```

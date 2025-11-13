@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import SearchBar from "../components/SearchBar";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -7,6 +7,7 @@ import useStudents from "../hooks/useStudents";
 import useRealtimeStudents from "../hooks/useRealtimeStudents";
 import { deleteStudent } from "../services/studentService";
 import { mapSupabaseErrorToMessage, logMinimalError } from "../services/errorMapping";
+import { getFeatureFlags } from "../config/featureFlags";
 
 /**
  * Students list page with search, pagination, and delete confirmation.
@@ -20,7 +21,44 @@ export default function StudentsList() {
   const [confirmId, setConfirmId] = useState(null);
 
   const { items, total, loading, error, refetch } = useStudents({ page, pageSize, search });
-  useRealtimeStudents();
+
+  // Determine realtime flag once per mount
+  const flags = useMemo(() => getFeatureFlags(), []);
+  const realtimeEnabled = flags.has("realtime");
+
+  // Subscribe to realtime events to keep list consistent without manual refresh.
+  useRealtimeStudents({
+    enabled: realtimeEnabled,
+    onInsert: async () => {
+      // New record likely changes counts and could affect paging; refresh and reset to first page for predictability.
+      try {
+        await refetch();
+        setPage(1);
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn("[sis] realtime insert refetch warning", e?.message || e);
+      }
+    },
+    onUpdate: async () => {
+      // Record content changed; maintain current page but refresh dataset.
+      try {
+        await refetch();
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn("[sis] realtime update refetch warning", e?.message || e);
+      }
+    },
+    onDelete: async () => {
+      // Deletion can impact counts and current page items; refresh and reset page for stable UX.
+      try {
+        await refetch();
+        setPage(1);
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn("[sis] realtime delete refetch warning", e?.message || e);
+      }
+    },
+  });
 
   const handleEdit = (id) => navigate(`/students/${id}/edit`);
   const handleDeleteAsk = (id) => setConfirmId(id);
@@ -62,10 +100,7 @@ export default function StudentsList() {
           {(() => {
             // minimal log for diagnostics
             try { /* eslint-disable no-unused-expressions */
-              // lazy import to avoid top-level circulars and keep render pure
-              // but we can safely reference since bundler hoists imports;
-              // using console warn directly to avoid dynamic import in render
-              // This keeps minimal noise and respects LOG_LEVEL in service calls
+              // keep noise minimal
             } catch (e) { /* noop */ }
             return null;
           })()}
