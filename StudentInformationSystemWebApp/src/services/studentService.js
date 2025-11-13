@@ -1,15 +1,17 @@
 import { getSupabaseClient } from "../lib/supabaseClient";
+import { mapSupabaseErrorToMessage, logMinimalError } from "./errorMapping";
 
 /**
  * Student Service provides CRUD operations for the 'students' table.
- * Columns commonly expected: id (uuid/int), name (text), email (text), age (int), created_at (timestamp)
+ * Columns commonly expected: id (uuid/int), firstName (text), lastName (text), email (text), enrollmentDate (date), status (text), age (int), created_at (timestamp)
  * Adjust fields according to your Supabase table structure.
  */
 
-// Shared error formatter
-function formatError(prefix, error) {
-  const message = error?.message || "Unknown error";
-  return new Error(`${prefix}: ${message}`);
+// Shared error formatter that maps underlying errors to friendly messages
+function formatError(prefix, error, action) {
+  const friendly = mapSupabaseErrorToMessage(error, { action });
+  logMinimalError(prefix, error);
+  return new Error(friendly);
 }
 
 // PUBLIC_INTERFACE
@@ -20,7 +22,7 @@ export async function listStudents({ limit = 100, offset = 0, orderBy = "created
 
   const { data, error, count } = await query;
   if (error) {
-    throw formatError("Failed to list students", error);
+    throw formatError("listStudents", error, "listing");
   }
   return { data: data || [], count: count ?? 0 };
 }
@@ -32,7 +34,7 @@ export async function getStudentById(id) {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase.from("students").select("*").eq("id", id).single();
   if (error) {
-    throw formatError("Failed to get student", error);
+    throw formatError("getStudentById", error, "retrieval");
   }
   return data;
 }
@@ -44,7 +46,7 @@ export async function createStudent(payload) {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase.from("students").insert(payload).select().single();
   if (error) {
-    throw formatError("Failed to create student", error);
+    throw formatError("createStudent", error, "creation");
   }
   return data;
 }
@@ -57,7 +59,7 @@ export async function updateStudent(id, updates) {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase.from("students").update(updates).eq("id", id).select().single();
   if (error) {
-    throw formatError("Failed to update student", error);
+    throw formatError("updateStudent", error, "update");
   }
   return data;
 }
@@ -69,7 +71,7 @@ export async function deleteStudent(id) {
   const supabase = getSupabaseClient();
   const { error } = await supabase.from("students").delete().eq("id", id);
   if (error) {
-    throw formatError("Failed to delete student", error);
+    throw formatError("deleteStudent", error, "deletion");
   }
   return true;
 }

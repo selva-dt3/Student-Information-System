@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import StudentForm from "../components/StudentForm";
 import { getStudentById, updateStudent } from "../services/studentService";
+import { uniquenessHintForEmail } from "../utils/validation";
 
 /**
  * Edit page for updating an existing student
@@ -22,7 +23,14 @@ export default function StudentEdit() {
       try {
         const s = await getStudentById(id);
         if (!cancelled) {
-          setInitial({ name: s.name || "", email: s.email || "", age: s.age ?? "" });
+          setInitial({
+            firstName: s.firstName || "",
+            lastName: s.lastName || "",
+            email: s.email || "",
+            enrollmentDate: s.enrollmentDate || "",
+            status: s.status || "active",
+            age: s.age ?? ""
+          });
         }
       } catch (err) {
         if (!cancelled) setError(err);
@@ -43,7 +51,10 @@ export default function StudentEdit() {
       navigate("/");
     } catch (err) {
       // eslint-disable-next-line no-alert
-      alert(`Update failed: ${err.message}`);
+      const msg = err?.message || "Update failed";
+      const enhanced =
+        msg.toLowerCase().includes("unique") ? `${msg}\n\n${uniquenessHintForEmail()}` : msg;
+      alert(enhanced);
     } finally {
       setSubmitting(false);
     }

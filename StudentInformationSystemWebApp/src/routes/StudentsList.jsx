@@ -35,7 +35,7 @@ export default function StudentsList() {
       setPage(1);
     } catch (err) {
       // eslint-disable-next-line no-alert
-      alert(`Delete failed: ${err.message}`);
+      alert(err?.message || "Unable to delete the record. Please try again.");
       setConfirmId(null);
     }
   };
