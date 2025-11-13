@@ -105,6 +105,28 @@ export async function listStudents() {
   return data || [];
 }
 
+/**
+ * Allowed sort columns to prevent errors or SQL injection-like issues.
+ * Only whitelist supported real columns; do not allow legacy aliases.
+ */
+const SORT_WHITELIST = new Set([
+  'first_name',
+  'last_name',
+  'email',
+  'grade_level',
+  'date_of_birth',
+  'created_at',
+]);
+
+/**
+ * Validate and normalize sorting inputs.
+ */
+function normalizeSort(sortBy, sortDir) {
+  const key = SORT_WHITELIST.has(String(sortBy || '').trim()) ? String(sortBy).trim() : 'created_at';
+  const dir = String(sortDir || '').toLowerCase() === 'asc' ? 'asc' : 'desc';
+  return { sortBy: key, ascending: dir === 'asc' };
+}
+
 // PUBLIC_INTERFACE
 export async function listStudentsFiltered(filters = {}, options = {}) {
   /**
@@ -121,9 +143,11 @@ export async function listStudentsFiltered(filters = {}, options = {}) {
    * Options:
    * - page: number (1-based)
    * - pageSize: number
-   * - withCount: boolean (default false)
+   * - sortBy: one of SORT_WHITELIST
+   * - sortDir: 'asc' | 'desc'
+   * - withCount: boolean (default true)
    *
-   * Returns: { data: Student[], page, pageSize, total: number|null }
+   * Returns: { data: Student[], page, pageSize, total: number|null, sortBy, sortDir }
    */
   let supabase;
   try {
@@ -134,9 +158,20 @@ export async function listStudentsFiltered(filters = {}, options = {}) {
   }
 
   const f = normalizeFilters(filters);
-  const { page = 1, pageSize = 50, withCount = false } = options || {};
-  const from = Math.max(0, (page - 1) * pageSize);
-  const to = Math.max(from, from + pageSize - 1);
+  const {
+    page = 1,
+    pageSize = 50,
+    sortBy: sb,
+    sortDir: sd,
+    withCount = true,
+  } = options || {};
+
+  const { sortBy, ascending } = normalizeSort(sb, sd);
+  const safePage = Number.isFinite(page) && page > 0 ? page : 1;
+  const safePageSize = Number.isFinite(pageSize) && pageSize > 0 && pageSize <= 500 ? pageSize : 50;
+
+  const from = Math.max(0, (safePage - 1) * safePageSize);
+  const to = Math.max(from, from + safePageSize - 1);
 
   // Start from a PostgRESTFilterBuilder by calling select() immediately.
   let query = supabase.from(TABLE).select('*');
@@ -161,8 +196,8 @@ export async function listStudentsFiltered(filters = {}, options = {}) {
   if (f.dob_start) query = query.gte('date_of_birth', f.dob_start);
   if (f.dob_end) query = query.lte('date_of_birth', f.dob_end);
 
-  // Order and pagination must be applied after filters; or() has already been applied above.
-  query = query.order('created_at', { ascending: false }).range(from, to);
+  // Order and pagination after filters.
+  query = query.order(sortBy, { ascending }).range(from, to);
 
   const start = Date.now();
   const { data, error, count } = withCount
@@ -174,30 +209,36 @@ export async function listStudentsFiltered(filters = {}, options = {}) {
     log('ERROR', 'students.filter_failed', {
       duration_ms: duration,
       error: error.message,
-      // Show the OR clause only in error context (non-PII, filter structure diagnostic)
       or_preview: orClause || null,
+      sortBy,
+      ascending,
+      page: safePage,
+      pageSize: safePageSize,
     });
     throw new Error('Failed to fetch filtered students.');
   }
 
-  // Development-only diagnostics for final OR string and pagination
   const env = (process.env.REACT_APP_NODE_ENV || process.env.NODE_ENV) || 'development';
   if (env !== 'production') {
     log('INFO', 'students.filter_success', {
       duration_ms: duration,
-      page,
-      pageSize,
+      page: safePage,
+      pageSize: safePageSize,
       returned: data?.length || 0,
       count: withCount ? count ?? null : null,
       or_preview: orClause || null,
+      sortBy,
+      sortDir: ascending ? 'asc' : 'desc',
     });
   }
 
   return {
     data: data || [],
-    page,
-    pageSize,
+    page: safePage,
+    pageSize: safePageSize,
     total: withCount ? count ?? null : null,
+    sortBy,
+    sortDir: ascending ? 'asc' : 'desc',
   };
 }
 

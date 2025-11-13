@@ -34,7 +34,7 @@ Supabase schema (public.students) used by the app:
 - phone text null
 - created_at timestamptz default now()
 
-Search and Filters:
+Search, Filters, Pagination, and Sorting:
 - Top navigation includes a search bar with filters. Available filters:
   - q: free text; applies to first_name, last_name, and email using ilike
   - first_name: ilike match
@@ -45,6 +45,14 @@ Search and Filters:
 - Date format must be YYYY-MM-DD. If invalid, the date filter is ignored and a small inline hint shows.
 - Results update with a short debounce as you type. Click Search to submit immediately or Clear to reset all filters.
 - Empty state shows guidance to adjust filters or add a new student.
+- Server-backed pagination:
+  - Use the Prev/Next buttons and the "Rows per page" selector (10/25/50/100).
+  - The footer shows "Showing X-Y of Z".
+  - State is preserved in URL query params: page, pageSize.
+- Sorting:
+  - Click table headers to sort by: first_name, last_name, email, grade_level, date_of_birth, created_at.
+  - Sorting toggles asc/desc on repeated clicks; state is preserved in URL as sortBy, sortDir.
+  - Sorting keys are whitelisted to avoid errors; legacy fields are not used.
 
 Notes on fields:
 - The UI collects "Date of Birth" and sends it to the database as "date_of_birth".

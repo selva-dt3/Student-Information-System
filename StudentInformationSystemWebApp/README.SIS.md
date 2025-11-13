@@ -123,6 +123,10 @@ npm test
   - grade_level: exact match
   - date_of_birth range: set "DOB start" and/or "DOB end" (YYYY-MM-DD). Invalid formats are ignored and a hint is shown.
   - Filters are debounced; press "Search" to execute immediately or "Clear" to reset all.
+- Pagination & Sorting:
+  - Navigate with Prev/Next, choose rows per page (10/25/50/100).
+  - Sort by clicking a column header; click again to toggle asc/desc.
+  - URL query params reflect state: page, pageSize, sortBy, sortDir, and filters.
 
 ## Logging
 
