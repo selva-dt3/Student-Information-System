@@ -1,104 +1,246 @@
-/* CSS Variables for Theme Management */
+/* Green-themed CSS Variables */
 :root {
-  /* Light theme colors */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --text-primary: #282c34;
-  --text-secondary: #61dafb;
-  --border-color: #e9ecef;
-  --button-bg: #007bff;
-  --button-text: #ffffff;
+  --bg: #ffffff;
+  --text: #122016;
+  --muted: #5a6b5f;
+  --card: #f6fbf7;
+  --border: #d9e8de;
+
+  --primary: #2e7d32;
+  --primary-600: #1b5e20;
+  --primary-100: #e8f5e9;
+
+  --danger: #c62828;
+  --danger-100: #ffebee;
+
+  --outline: #2e7d3240;
 }
 
 [data-theme="dark"] {
-  /* Dark theme colors */
-  --bg-primary: #1a1a1a;
-  --bg-secondary: #282c34;
-  --text-primary: #ffffff;
-  --text-secondary: #61dafb;
-  --border-color: #404040;
-  --button-bg: #0056b3;
-  --button-text: #ffffff;
+  --bg: #0d1510;
+  --text: #e2f1e6;
+  --muted: #a7b9ac;
+  --card: #111d15;
+  --border: #27402e;
+
+  --primary: #57c264;
+  --primary-600: #42a74f;
+  --primary-100: #0b2210;
+
+  --danger: #ef5350;
+  --danger-100: #3b0f0f;
+
+  --outline: #57c26440;
 }
 
-.App {
-  text-align: center;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  min-height: 100vh;
-  transition: background-color 0.3s ease, color 0.3s ease;
+* { box-sizing: border-box; }
+
+html, body, #root, .App { min-height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.container {
+  max-width: 1024px;
+  padding: 0 16px;
+  margin: 0 auto;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.sis-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: linear-gradient(0deg, var(--card), var(--primary-100));
+  border-bottom: 1px solid var(--border);
 }
 
-.App-header {
-  background-color: var(--bg-secondary);
-  min-height: 100vh;
+.sis-navbar .container {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: var(--text-primary);
-  transition: background-color 0.3s ease;
-  position: relative;
+  justify-content: space-between;
+  padding: 14px 16px;
 }
 
-.App-link {
-  color: var(--text-secondary);
-  transition: color 0.3s ease;
+.brand {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.brand .logo {
+  font-size: 28px;
+}
+.title {
+  font-weight: 700;
+  font-size: 18px;
+}
+.subtitle {
+  font-size: 12px;
+  color: var(--muted);
 }
 
-.theme-toggle {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background-color: var(--button-bg);
-  color: var(--button-text);
-  border: none;
+.nav-actions {
+  display: flex;
+  gap: 8px;
+}
+
+main.container {
+  padding: 16px;
+}
+
+/* Buttons */
+.btn {
+  border: 1px solid transparent;
   border-radius: 8px;
-  padding: 10px 20px;
-  font-size: 14px;
+  padding: 8px 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: var(--card);
+  color: var(--text);
+}
+.btn:focus { outline: 2px solid var(--outline); outline-offset: 2px; }
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+}
+.btn-primary:hover { background: var(--primary-600); }
+.btn-secondary {
+  background: transparent;
+  border-color: var(--border);
+}
+.btn-outline {
+  background: transparent;
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.btn-outline:hover {
+  background: var(--primary-100);
+}
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+}
+.btn-danger:hover {
+  filter: brightness(0.95);
+}
+.btn-small {
+  padding: 6px 10px;
+  font-size: 12px;
 }
 
-.theme-toggle:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  opacity: 0.9;
+/* Cards */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.card-title {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+}
+.card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.theme-toggle:active {
-  transform: translateY(0);
+/* Forms */
+.form-card .form-control {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 12px;
+}
+.form-card label {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.form-card input {
+  border: 1px solid var(--border);
+  background: #fff;
+  color: #111;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+[data-theme="dark"] .form-card input {
+  background: #0b140e;
+  color: var(--text);
+}
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 720px) {
+  .grid-2 { grid-template-columns: 1fr; }
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.error {
+  color: var(--danger);
+  font-size: 12px;
+  margin-top: 4px;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* Table */
+.table-responsive { overflow-x: auto; }
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+[data-theme="dark"] .table { background: #0b140e; }
+.table th, .table td {
+  border-bottom: 1px solid var(--border);
+  padding: 10px 12px;
+  text-align: left;
+}
+.table th {
+  background: var(--primary-100);
+  color: var(--text);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.table .empty {
+  text-align: center;
+  color: var(--muted);
+}
+.actions-cell {
+  display: flex;
+  gap: 8px;
 }
 
-/* Responsive design for mobile */
-@media (max-width: 768px) {
-  .theme-toggle {
-    top: 10px;
-    right: 10px;
-    padding: 8px 16px;
-    font-size: 12px;
-  }
+/* Alerts */
+.alert {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+.alert-error {
+  background: var(--danger-100);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* Footer */
+.footer {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+}
+.muted { color: var(--muted); }
+
+.loading {
+  padding: 20px;
 }
