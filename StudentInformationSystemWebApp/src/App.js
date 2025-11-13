@@ -79,10 +79,11 @@ function App() {
     } catch (e) {
       // If validation errors, component already shows them. Here handle API errors.
       if (!e.validation) {
-        setError(e.message || 'Operation failed');
+        const friendly = e.message || 'Operation failed';
+        setError(friendly);
       }
       // eslint-disable-next-line no-console
-      console.error('[SIS] submit error', e);
+      console.error('[SIS] submit error', { message: e?.message, details: e?.details });
     }
   };
 

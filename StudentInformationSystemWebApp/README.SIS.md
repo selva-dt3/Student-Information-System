@@ -56,6 +56,12 @@ create table if not exists public.students (
 
 Enable RLS and, for demo use, you may add permissive anon policies:
 
+Troubleshooting INSERT (add student):
+- If the UI shows "Insert blocked by RLS policy...", confirm your project's role:
+  - Using anon key → role is anon
+  - Using an authenticated session → role is authenticated
+- Ensure an INSERT policy exists for that role. Example for anon:
+
 ```sql
 alter table public.students enable row level security;
 
@@ -64,6 +70,10 @@ for select using (true);
 
 create policy "Students insert for anon" on public.students
 for insert with check (true);
+
+-- If using authenticated users instead of anon, use:
+-- create policy "Students insert for authenticated" on public.students
+-- for insert to authenticated with check (true);
 
 create policy "Students update for anon" on public.students
 for update using (true) with check (true);

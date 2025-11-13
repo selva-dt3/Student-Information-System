@@ -113,8 +113,38 @@ export async function addStudent(student) {
   const duration = Date.now() - start;
 
   if (error) {
-    log('ERROR', 'students.add_failed', { duration_ms: duration, error: error.message });
-    throw new Error('Failed to add student');
+    // Normalize common failure reasons into friendly messages
+    const msg = String(error.message || '').toLowerCase();
+    let userMessage = 'Failed to add student';
+
+    // Unique email constraint (constraint names can vary, inspect message)
+    if (msg.includes('unique') && msg.includes('email')) {
+      userMessage = 'Email already exists. Please use a different email.';
+    }
+
+    // RLS / permission denied signals
+    if (msg.includes('rls') || msg.includes('row level security') || msg.includes('permission denied') || msg.includes('not allowed')) {
+      userMessage = 'Insert blocked by RLS policy. Ensure anon (or authenticated) role has INSERT on public.students.';
+    }
+
+    // Required columns/validation coming from DB (in case schema differs)
+    if (msg.includes('null value') && (msg.includes('first_name') || msg.includes('last_name') || msg.includes('email'))) {
+      userMessage = 'Missing required fields. Please provide first name, last name, and a valid email.';
+    }
+
+    log('ERROR', 'students.add_failed', {
+      duration_ms: duration,
+      error: error.message,
+      // Do not include PII fields; only include safe metadata
+      fields_present: {
+        first_name: Boolean(payload.first_name),
+        last_name: Boolean(payload.last_name),
+        email: Boolean(payload.email)
+      }
+    });
+    const e = new Error(userMessage);
+    e.details = { raw: error.message };
+    throw e;
   }
   log('INFO', 'students.add_success', { duration_ms: duration, id: data?.id });
   return data;
