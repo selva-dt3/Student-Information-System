@@ -25,6 +25,8 @@ Optional:
 - REACT_APP_FEATURE_FLAGS=realtime (enables live updates via Supabase Realtime for students table)
 - REACT_APP_LOG_LEVEL=info (error|warn|info|debug)
 
+Tip: .env.example contains additional commonly-used variables reserved for future expansion (ports, telemetry, base URLs). Only the Supabase keys are required to start.
+
 2) Install and run:
 ```
 npm install
@@ -46,10 +48,13 @@ See docs/supabase-setup.md for full SQL.
 
 ## Environment Variables
 
-These variables configure the app (Create React App uses the REACT_APP_ prefix):
+These variables configure the app (Create React App uses the REACT_APP_ prefix). See .env.example for a full template.
 
+Required:
 - REACT_APP_SUPABASE_URL: Supabase Project URL (Settings → API)
 - REACT_APP_SUPABASE_ANON_KEY: Supabase anon public key (Settings → API)
+
+Optional:
 - REACT_APP_FEATURE_FLAGS: Comma-separated flags, e.g., "realtime"
 - REACT_APP_LOG_LEVEL: Log verbosity for minimal diagnostics (error|warn|info|debug)
 
@@ -97,6 +102,10 @@ Follow docs/supabase-setup.md to:
 - Enable RLS and apply demo policies
 - Optionally enable Realtime
 - Configure environment variables
+
+Then:
+- Copy .env.example to .env and set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY
+- Optionally set REACT_APP_FEATURE_FLAGS=realtime to enable live list updates
 
 ## Notes
 

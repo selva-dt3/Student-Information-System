@@ -118,14 +118,19 @@ The hook src/hooks/useRealtimeStudents.js handles subscription when the feature 
 
 ## Environment Variables
 
-Create Student-Information-System/StudentInformationSystemWebApp/.env with:
+Create Student-Information-System/StudentInformationSystemWebApp/.env using the provided template:
 
 ```
-REACT_APP_SUPABASE_URL=your-project-url
-REACT_APP_SUPABASE_ANON_KEY=your-anon-public-key
-REACT_APP_FEATURE_FLAGS=realtime
-REACT_APP_LOG_LEVEL=info
+cp .env.example .env
 ```
+
+Fill:
+- REACT_APP_SUPABASE_URL=your-project-url
+- REACT_APP_SUPABASE_ANON_KEY=your-anon-public-key
+
+Optional:
+- REACT_APP_FEATURE_FLAGS=realtime
+- REACT_APP_LOG_LEVEL=info
 
 Notes:
 - FEATURE_FLAGS is a comma-separated list. To disable realtime, remove realtime or leave it empty.
