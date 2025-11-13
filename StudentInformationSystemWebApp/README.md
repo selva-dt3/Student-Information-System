@@ -10,7 +10,40 @@ Quick start:
 - `npm start` (runs on port 3000)
 - `npm test`
 
+## Testing
+
+This project includes Jest + React Testing Library for unit/integration tests and Cypress for end-to-end (E2E) tests.
+
+Scripts:
+- Unit tests: `npm run test:unit`
+- Integration tests: `npm run test:integration`
+- All Jest tests: `npm test` (watch disabled in CI)
+- Cypress open (GUI): `npm run cypress:open`
+- Cypress run (headless): `npm run cypress:run` or `npm run test:e2e`
+
+Notes:
+- Unit/integration tests mock Supabase to avoid real network calls via `jest.mock('../../supabaseClient')`.
+- Cypress tests use `cy.intercept` to stub Supabase REST calls (`/rest/v1/students*`) so they do not require a live backend.
+- For E2E against a running preview, ensure the app is running at `http://localhost:3000` (default) or set `REACT_APP_FRONTEND_URL` and `baseUrl` in `cypress.config.js`.
+
+Typical flows covered:
+- Unit: studentsService validation and friendly error handling for Supabase errors.
+- Integration: App loads, add form opens, pagination controls render.
+- E2E: Header visible, search and pagination visible, add form open/cancel, delete confirm.
+
+Run examples:
+```
+npm run test:unit
+npm run test:integration
+npm run cypress:open
+npm run test:e2e
+```
+
 Troubleshooting:
+- If Jest indicates Supabase not configured during unit/integration, ensure the test mocks are active (they are included in tests). Do not set real keys/secrets for tests.
+- If Cypress cannot visit the app, start it first (`npm start`) or rely on network stubs which do not require the backend.
+
+Troubleshooting (app runtime):
 - If you see "Could not load students. Check Supabase configuration.", open the browser console.
 - Look for "[SIS] Supabase env diagnostics" to confirm which env variables were detected and any issues.
 - Ensure RLS allows anon select on public.students as per README.SIS.md.
