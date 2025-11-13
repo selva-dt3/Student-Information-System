@@ -1,25 +1,29 @@
 //
+//
 // Maps Supabase/Postgres errors to user-friendly messages.
 // Avoids exposing raw database details to end users.
 //
-
+//
 // PUBLIC_INTERFACE
 export function mapSupabaseErrorToMessage(error, { action = "operation" } = {}) {
   /**
    * Translate Supabase error into a friendly string.
    * Known cases:
    * - Postgres unique_violation: code 23505
+   * - Permission denied (RLS): code 42501
+   * - Missing column / relation errors
    * - Network or unknown: generic fallback
    */
   const code = error?.code || error?.status?.toString?.() || "";
-  const msg = (error?.message || "").toLowerCase();
+  const rawMsg = String(error?.message || "");
+  const msg = rawMsg.toLowerCase();
 
   // Unique violation hints (email uniqueness commonly)
   if (code === "23505" || msg.includes("duplicate key") || msg.includes("unique")) {
     return "This value must be unique. Please use a different one.";
   }
 
-  // Permission denied
+  // Permission denied (often RLS)
   if (code === "42501" || msg.includes("permission")) {
     return "You do not have permission to perform this action.";
   }
@@ -27,6 +31,14 @@ export function mapSupabaseErrorToMessage(error, { action = "operation" } = {}) 
   // Not null violation
   if (code === "23502") {
     return "Required data is missing. Please review your input.";
+  }
+
+  // Missing relation/table or column errors
+  if (msg.includes("relation") && msg.includes("does not exist")) {
+    return "Backend table is missing. Please ensure the 'public.students' table exists.";
+  }
+  if (msg.includes("column") && msg.includes("does not exist")) {
+    return "Backend schema mismatch. Please ensure required columns exist in 'public.students'.";
   }
 
   // Connection or network issues

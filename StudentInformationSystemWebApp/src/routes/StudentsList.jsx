@@ -89,6 +89,12 @@ export default function StudentsList() {
     }
   };
 
+  const friendlyListError = error ? mapSupabaseErrorToMessage(error, { action: "listing" }) : null;
+  if (error) {
+    // Minimal context log without leaking specifics
+    logMinimalError("StudentsList.list", error);
+  }
+
   return (
     <div className="sis-container">
       <div className="sis-header">
@@ -103,16 +109,7 @@ export default function StudentsList() {
 
       {loading && <div className="sis-info">Loading...</div>}
       {error && (
-        <>
-          {(() => {
-            // minimal log for diagnostics
-            try { /* eslint-disable no-unused-expressions */
-              // keep noise minimal
-            } catch (e) { /* noop */ }
-            return null;
-          })()}
-          <div className="sis-error">Error: {error.message}</div>
-        </>
+        <div className="sis-error">Error: {friendlyListError}</div>
       )}
 
       <StudentTable

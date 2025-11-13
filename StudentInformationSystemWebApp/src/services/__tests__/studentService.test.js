@@ -67,19 +67,25 @@ describe("studentService", () => {
         count: 5,
       });
 
-      const res = await listStudents({ limit: 10, offset: 0 });
+      const res = await listStudents({ limit: 10, offset: 0, orderBy: "created_at", ascending: false });
       expect(supabaseMock.from).toHaveBeenCalledWith("students");
       expect(fromChain.select).toHaveBeenCalledWith("*", { count: "exact" });
-      expect(fromChain.order).toHaveBeenCalled();
+      expect(fromChain.order).toHaveBeenCalledWith("created_at", { ascending: false });
       expect(fromChain.range).toHaveBeenCalledWith(0, 9);
       expect(res).toEqual({ data: [{ id: 1, name: "John", email: "j@example.com" }], count: 5 });
     });
 
-    it("throws mapped error on failure", async () => {
-      fromChain.range.mockResolvedValueOnce({ data: null, error: { code: "42501", message: "permission denied" }, count: null });
+    it("throws mapped error on permission failure", async () => {
+      fromChain.range.mockResolvedValueOnce({ data: null, error: { code: "42501", message: "permission denied for table students" }, count: null });
 
       await expect(listStudents()).rejects.toThrow(/You do not have permission/i);
       expect(logMinimalError).toHaveBeenCalled();
+    });
+
+    it("normalizes invalid limit/offset safely", async () => {
+      fromChain.range.mockResolvedValueOnce({ data: [], error: null, count: 0 });
+      await listStudents({ limit: "not-a-number", offset: -10 });
+      expect(fromChain.range).toHaveBeenCalledWith(0, 99); // default limit 100, offset normalized to 0
     });
   });
 

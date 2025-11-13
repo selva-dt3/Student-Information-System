@@ -3,8 +3,9 @@ import { mapSupabaseErrorToMessage, logMinimalError } from "./errorMapping";
 
 /**
  * Student Service provides CRUD operations for the 'students' table.
- * Columns commonly expected: id (uuid/int), firstName (text), lastName (text), email (text), enrollmentDate (date), status (text), age (int), created_at (timestamp)
- * Adjust fields according to your Supabase table structure.
+ * Columns expected: id (uuid), first_name, last_name, email, enrollment_date,
+ * status, age, created_at, and generated name (stored).
+ * UI components mostly refer to "name", "email", "age" for listing.
  */
 
 // Shared error formatter that maps underlying errors to friendly messages
@@ -18,7 +19,19 @@ function formatError(prefix, error, action) {
 export async function listStudents({ limit = 100, offset = 0, orderBy = "created_at", ascending = false } = {}) {
   /** Lists students with pagination and ordering. */
   const supabase = getSupabaseClient();
-  let query = supabase.from("students").select("*", { count: "exact" }).order(orderBy, { ascending }).range(offset, offset + limit - 1);
+
+  // Defensive normalization for parameters
+  const safeLimit = Number.isFinite(Number(limit)) && Number(limit) > 0 ? Number(limit) : 100;
+  const safeOffset = Math.max(0, Number.isFinite(Number(offset)) ? Number(offset) : 0);
+  const start = safeOffset;
+  const end = start + safeLimit - 1;
+
+  // Build query step-by-step to avoid premature await; select returns a builder
+  const query = supabase
+    .from("students")
+    .select("*", { count: "exact" })
+    .order(orderBy || "created_at", { ascending: !!ascending })
+    .range(start, end);
 
   const { data, error, count } = await query;
   if (error) {
