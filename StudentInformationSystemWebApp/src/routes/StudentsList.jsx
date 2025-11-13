@@ -26,38 +26,45 @@ export default function StudentsList() {
   const flags = useMemo(() => getFeatureFlags(), []);
   const realtimeEnabled = flags.has("realtime");
 
+  // Helper: local optimistic update for current page's items; rely on refetch to reconcile counts/pagination
+  const safeMergeInsert = async (row) => {
+    try {
+      // If the new row would not be visible due to pagination or filters, we still refetch
+      await refetch();
+      setPage(1); // make it visible and reset paging
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn("[sis] realtime insert refetch warning", e?.message || e);
+    }
+  };
+
+  const safeMergeUpdate = async (row) => {
+    try {
+      // When a record updates, maintain current page and refresh
+      await refetch();
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn("[sis] realtime update refetch warning", e?.message || e);
+    }
+  };
+
+  const safeMergeDelete = async (row) => {
+    try {
+      await refetch();
+      setPage(1); // deletion can affect counts; normalize view
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn("[sis] realtime delete refetch warning", e?.message || e);
+    }
+  };
+
   // Subscribe to realtime events to keep list consistent without manual refresh.
+  // Gated by REACT_APP_FEATURE_FLAGS via getFeatureFlags in the hook.
   useRealtimeStudents({
     enabled: realtimeEnabled,
-    onInsert: async () => {
-      // New record likely changes counts and could affect paging; refresh and reset to first page for predictability.
-      try {
-        await refetch();
-        setPage(1);
-      } catch (e) {
-        // eslint-disable-next-line no-console
-        console.warn("[sis] realtime insert refetch warning", e?.message || e);
-      }
-    },
-    onUpdate: async () => {
-      // Record content changed; maintain current page but refresh dataset.
-      try {
-        await refetch();
-      } catch (e) {
-        // eslint-disable-next-line no-console
-        console.warn("[sis] realtime update refetch warning", e?.message || e);
-      }
-    },
-    onDelete: async () => {
-      // Deletion can impact counts and current page items; refresh and reset page for stable UX.
-      try {
-        await refetch();
-        setPage(1);
-      } catch (e) {
-        // eslint-disable-next-line no-console
-        console.warn("[sis] realtime delete refetch warning", e?.message || e);
-      }
-    },
+    onInsert: safeMergeInsert,
+    onUpdate: safeMergeUpdate,
+    onDelete: safeMergeDelete,
   });
 
   const handleEdit = (id) => navigate(`/students/${id}/edit`);

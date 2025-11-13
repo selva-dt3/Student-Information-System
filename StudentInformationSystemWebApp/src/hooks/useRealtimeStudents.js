@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { getSupabaseClient } from "../lib/supabaseClient";
 import { getFeatureFlags } from "../config/featureFlags";
 
@@ -21,8 +21,14 @@ import { getFeatureFlags } from "../config/featureFlags";
  */
 export default function useRealtimeStudents(options = {}) {
   const { enabled = true, onInsert, onUpdate, onDelete } = options;
+
+  // Gate by REACT_APP_FEATURE_FLAGS
   const flags = getFeatureFlags();
   const isRealtimeEnabled = flags.has("realtime") && !!enabled;
+
+  // Keep a ref to current handlers to avoid stale closures if parent re-renders
+  const handlersRef = useRef({ onInsert, onUpdate, onDelete });
+  handlersRef.current = { onInsert, onUpdate, onDelete };
 
   useEffect(() => {
     if (!isRealtimeEnabled) return undefined;
@@ -36,41 +42,34 @@ export default function useRealtimeStudents(options = {}) {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "students" },
         (payload) => {
-          // payload.new contains the inserted row
-          if (typeof onInsert === "function") {
-            onInsert(payload.new);
-          }
+          const h = handlersRef.current.onInsert;
+          if (typeof h === "function") h(payload.new);
         }
       )
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "students" },
         (payload) => {
-          // payload.new contains updated row
-          if (typeof onUpdate === "function") {
-            onUpdate(payload.new);
-          }
+          const h = handlersRef.current.onUpdate;
+          if (typeof h === "function") h(payload.new);
         }
       )
       .on(
         "postgres_changes",
         { event: "DELETE", schema: "public", table: "students" },
         (payload) => {
-          // payload.old contains deleted row
-          if (typeof onDelete === "function") {
-            onDelete(payload.old);
-          }
+          const h = handlersRef.current.onDelete;
+          if (typeof h === "function") h(payload.old);
         }
       )
       .subscribe((status) => {
-        // Optional: minimal non-PII diagnostic
         // eslint-disable-next-line no-console
         if (status === "SUBSCRIBED") {
           console.info("[sis] realtime subscribed: public.students");
         }
       });
 
-    // Cleanup: unsubscribe on unmount
+    // Cleanup: unsubscribe on unmount or when flag toggles
     return () => {
       try {
         supabase.removeChannel(channel);
@@ -79,5 +78,5 @@ export default function useRealtimeStudents(options = {}) {
         console.warn("[sis] realtime unsubscribe warning", e?.message || e);
       }
     };
-  }, [isRealtimeEnabled, onInsert, onUpdate, onDelete]);
+  }, [isRealtimeEnabled]);
 }
