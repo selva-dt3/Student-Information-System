@@ -7,6 +7,11 @@ import { validateStudent } from '../services/studentsService';
  * - initial: optional student object to edit
  * - onCancel: function
  * - onSubmit: async function(student) -> Promise
+ *
+ * Field normalization note:
+ * - UI state uses DB-aligned keys:
+ *   first_name, last_name, email, date_of_birth, grade_level, address, phone
+ * - Any legacy incoming data (dob, grade) is mapped to the normalized keys.
  */
 export default function StudentForm({ initial = null, onCancel, onSubmit }) {
   const [values, setValues] = useState({
@@ -14,7 +19,7 @@ export default function StudentForm({ initial = null, onCancel, onSubmit }) {
     last_name: '',
     email: '',
     date_of_birth: '',
-    grade: '',
+    grade_level: '',
     address: '',
     phone: '',
   });
@@ -27,8 +32,10 @@ export default function StudentForm({ initial = null, onCancel, onSubmit }) {
         first_name: initial.first_name || '',
         last_name: initial.last_name || '',
         email: initial.email || '',
-        date_of_birth: initial.dob || initial.date_of_birth || '',
-        grade: initial.grade || initial.grade_level || '',
+        // Prefer date_of_birth; fall back to legacy dob if present
+        date_of_birth: initial.date_of_birth || initial.dob || '',
+        // Prefer grade_level; fall back to legacy grade if present
+        grade_level: initial.grade_level || initial.grade || '',
         address: initial.address || '',
         phone: initial.phone || '',
       });
@@ -89,9 +96,9 @@ export default function StudentForm({ initial = null, onCancel, onSubmit }) {
 
       <div className="grid-2">
         <div className="form-control">
-          <label htmlFor="grade">Grade</label>
-          <input id="grade" name="grade" value={values.grade} onChange={onChange} placeholder="10 or Grade 10" />
-          {errors.grade && <span className="error">{errors.grade}</span>}
+          <label htmlFor="grade_level">Grade</label>
+          <input id="grade_level" name="grade_level" value={values.grade_level} onChange={onChange} placeholder="10 or Grade 10" />
+          {errors.grade_level && <span className="error">{errors.grade_level}</span>}
         </div>
 
         <div className="form-control">

@@ -21,7 +21,7 @@ export default function StudentList({ students, onEdit, onDelete }) {
               <th>First</th>
               <th>Last</th>
               <th>Email</th>
-              <th>DOB</th>
+              <th>Date of Birth</th>
               <th>Grade</th>
               <th style={{ width: 180 }}>Actions</th>
             </tr>
@@ -31,19 +31,23 @@ export default function StudentList({ students, onEdit, onDelete }) {
               <tr>
                 <td colSpan={6} className="empty">No students found. Add one to get started.</td>
               </tr>
-            ) : students.map((s) => (
-              <tr key={s.id}>
-                <td>{s.first_name}</td>
-                <td>{s.last_name}</td>
-                <td>{s.email}</td>
-                <td>{s.dob || s.date_of_birth || '-'}</td>
-                <td>{s.grade ?? s.grade_level ?? '-'}</td>
-                <td className="actions-cell">
-                  <button className="btn btn-small btn-secondary" onClick={() => onEdit(s)} aria-label={`Edit ${s.first_name} ${s.last_name}`}>Edit</button>
-                  <button className="btn btn-small btn-danger" onClick={() => onDelete(s)} aria-label={`Delete ${s.first_name} ${s.last_name}`}>Delete</button>
-                </td>
-              </tr>
-            ))}
+            ) : students.map((s) => {
+              const displayDob = s.date_of_birth ?? s.dob ?? '-';
+              const displayGrade = s.grade_level ?? s.grade ?? '-';
+              return (
+                <tr key={s.id}>
+                  <td>{s.first_name}</td>
+                  <td>{s.last_name}</td>
+                  <td>{s.email}</td>
+                  <td>{displayDob}</td>
+                  <td>{displayGrade}</td>
+                  <td className="actions-cell">
+                    <button className="btn btn-small btn-secondary" onClick={() => onEdit(s)} aria-label={`Edit ${s.first_name} ${s.last_name}`}>Edit</button>
+                    <button className="btn btn-small btn-danger" onClick={() => onDelete(s)} aria-label={`Delete ${s.first_name} ${s.last_name}`}>Delete</button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

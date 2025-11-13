@@ -33,7 +33,7 @@ export function validateStudent(student) {
   /**
    * Validates a student object and returns { valid: boolean, errors: Record<string,string> }.
    * Required fields: first_name, last_name, email.
-   * Optional: date_of_birth (YYYY-MM-DD), grade (text <= 20 chars), address, phone.
+   * Optional: date_of_birth (YYYY-MM-DD), grade_level (text <= 20 chars), address, phone.
    */
   const errors = {};
   const s = student || {};
@@ -60,8 +60,8 @@ export function validateStudent(student) {
     }
   }
 
-  if (s.grade != null && String(s.grade).length > 20) {
-    errors.grade = 'Max 20 characters';
+  if (s.grade_level != null && String(s.grade_level).length > 20) {
+    errors.grade_level = 'Max 20 characters';
   }
 
   if (s.phone && String(s.phone).length > 40) {
@@ -99,6 +99,19 @@ export async function listStudents() {
   return data || [];
 }
 
+/**
+ * Create a redacted copy of payload for logging to verify keys without PII.
+ */
+function redactForLogging(payload) {
+  if (!payload) return {};
+  return {
+    has_first_name: Boolean(payload.first_name),
+    has_last_name: Boolean(payload.last_name),
+    has_email: Boolean(payload.email),
+    keys: Object.keys(payload).sort(),
+  };
+}
+
 // PUBLIC_INTERFACE
 export async function addStudent(student) {
   /** Inserts a new student record with only existing columns. */
@@ -118,6 +131,10 @@ export async function addStudent(student) {
     throw new Error('Supabase not configured. Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY (or REACT_APP_SUPABASE_KEY).');
   }
   const payload = sanitize(student);
+
+  // Log a safe preview of the payload keys for verification (no PII)
+  log('INFO', 'students.add_payload_keys', redactForLogging(payload));
+
   const start = Date.now();
   const { data, error } = await supabase.from(TABLE).insert([payload]).select().single();
   const duration = Date.now() - start;
@@ -127,23 +144,20 @@ export async function addStudent(student) {
     const msg = String(error.message || '').toLowerCase();
     let userMessage = 'Failed to add student';
 
-    // Unique email constraint (constraint names can vary, inspect message)
     if (msg.includes('unique') && msg.includes('email')) {
       userMessage = 'Email already exists. Please use a different email.';
     }
 
-    // RLS / permission denied signals
     if (msg.includes('rls') || msg.includes('row level security') || msg.includes('permission denied') || msg.includes('not allowed')) {
       userMessage = 'Insert blocked by RLS policy. Ensure anon (or authenticated) role has INSERT on public.students.';
     }
 
-    // Required columns/validation coming from DB (in case schema differs)
     if (msg.includes('null value') && (msg.includes('first_name') || msg.includes('last_name') || msg.includes('email'))) {
       userMessage = 'Missing required fields. Please provide first name, last name, and a valid email.';
     }
 
-    // Non-existent column errors e.g., "Could not find 'age'"
-    if (msg.includes('column') && msg.includes('age')) {
+    // Non-existent column errors
+    if (msg.includes('column')) {
       userMessage = 'Unexpected column in payload. Please update the app to the latest version.';
     }
 
@@ -154,7 +168,11 @@ export async function addStudent(student) {
       fields_present: {
         first_name: Boolean(payload.first_name),
         last_name: Boolean(payload.last_name),
-        email: Boolean(payload.email)
+        email: Boolean(payload.email),
+        date_of_birth: 'date_of_birth' in payload,
+        grade_level: 'grade_level' in payload,
+        address: 'address' in payload,
+        phone: 'phone' in payload
       }
     });
     const e = new Error(userMessage);
@@ -186,6 +204,10 @@ export async function updateStudent(id, student) {
     throw new Error('Supabase not configured. Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY (or REACT_APP_SUPABASE_KEY).');
   }
   const payload = sanitize(student);
+
+  // Log a safe preview of the payload keys for verification (no PII)
+  log('INFO', 'students.update_payload_keys', { id, ...redactForLogging(payload) });
+
   const start = Date.now();
   const { data, error } = await supabase.from(TABLE).update(payload).eq('id', id).select().single();
   const duration = Date.now() - start;
@@ -222,22 +244,27 @@ export async function deleteStudent(id) {
   return true;
 }
 
+/**
+ * Normalize UI model to database column names:
+ * - first_name, last_name, email, date_of_birth, grade_level, address, phone
+ * Accept and map legacy aliases if provided (dob -> date_of_birth, grade -> grade_level).
+ */
 function sanitize(s) {
-  // Map UI fields to DB columns and trim. Use only existing columns.
-  // DB columns per README: first_name, last_name, email, dob, grade (+ optional address/phone if present in DB)
   const trimmed = {
     first_name: String(s.first_name || '').trim(),
     last_name: String(s.last_name || '').trim(),
     email: String(s.email || '').trim().toLowerCase(),
-    // Accept both date_of_birth and dob from UI; store as 'dob'
-    dob: s.date_of_birth ? String(s.date_of_birth).trim() : (s.dob ? String(s.dob).trim() : null),
-    grade: s.grade == null ? null : String(s.grade).trim(),
-    // Pass through optional fields only if provided; DB may ignore if not present
+    date_of_birth: s.date_of_birth
+      ? String(s.date_of_birth).trim()
+      : (s.dob ? String(s.dob).trim() : null),
+    grade_level: s.grade_level != null
+      ? String(s.grade_level).trim()
+      : (s.grade != null ? String(s.grade).trim() : null),
     address: s.address ? String(s.address).trim() : null,
     phone: s.phone ? String(s.phone).trim() : null,
   };
 
-  // Remove null/undefined keys to avoid sending absent columns explicitly
+  // Remove null/undefined/empty keys
   const out = {};
   Object.keys(trimmed).forEach((k) => {
     if (trimmed[k] !== null && trimmed[k] !== undefined && trimmed[k] !== '') out[k] = trimmed[k];

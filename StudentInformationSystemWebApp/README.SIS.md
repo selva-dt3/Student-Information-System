@@ -36,8 +36,10 @@ Create a table named `students` with columns:
 - first_name: text not null
 - last_name: text not null
 - email: text unique not null
-- dob: date null
-- grade: text null
+- date_of_birth: date null
+- grade_level: text null
+- address: text null
+- phone: text null
 - created_at: timestamptz default now()
 
 In SQL (Postgres):
@@ -48,15 +50,17 @@ create table if not exists public.students (
   first_name text not null,
   last_name text not null,
   email text unique not null,
-  dob date null,
-  grade text,
+  date_of_birth date null,
+  grade_level text,
+  address text,
+  phone text,
   created_at timestamptz default now()
 );
 ```
 
 Note on fields:
-- The application uses "Date of Birth" and stores it in the "dob" column. There is no "age" column used anywhere.
-- If your table previously had an "age" field, remove it from your schema or leave it unused; the app will not reference it.
+- The application uses "Date of Birth" as "date_of_birth". Legacy "dob" is no longer used in payloads (display still tolerates existing rows with dob).
+- The application uses "grade_level" (string) for grade. Legacy "grade" is tolerated on read.
 - Optional "address" and "phone" fields are supported by the UI; if your database does not have these columns they will be ignored by Postgres.
 
 Enable RLS and, for demo use, you may add permissive anon policies:

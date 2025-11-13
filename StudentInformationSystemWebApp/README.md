@@ -28,13 +28,15 @@ Supabase schema (public.students) used by the app:
 - first_name text not null
 - last_name text not null
 - email text unique not null
-- dob date null
-- grade text null
+- date_of_birth date null
+- grade_level text null
+- address text null
+- phone text null
 - created_at timestamptz default now()
 
 Notes on fields:
-- The UI collects "Date of Birth" and sends it to the database as the "dob" column.
-- The app no longer uses an "age" field. If your table previously had an "age" column, remove it or ignore it; the app will not send it.
+- The UI collects "Date of Birth" and sends it to the database as "date_of_birth".
+- The UI sends grade as "grade_level".
 - Optional fields address and phone may be sent if present in your schema; otherwise they are ignored by the database.
 
 RLS (demo): enable row level security and allow anon select/insert/update/delete (see README.SIS.md).
