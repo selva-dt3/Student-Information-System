@@ -15,47 +15,61 @@ A simple, single-page React app to manage students with Supabase as the backend.
 
 ## Environment Variables
 
-Set these in your environment (e.g., a local `.env` file at project root of this app):
+Set these in your environment (e.g., a local `.env` file at the project root of this app). Copy `.env.example` to `.env` and fill in your values:
 
 - REACT_APP_SUPABASE_URL
 - REACT_APP_SUPABASE_ANON_KEY
 
 The project already has other REACT_APP_* variables available; we only use the two above specifically for Supabase.
 
-Example `.env.example`:
-```
-REACT_APP_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
-REACT_APP_SUPABASE_ANON_KEY=YOUR_PUBLIC_ANON_KEY
-# Optional:
-REACT_APP_NODE_ENV=development
-```
+Example `.env.example` is included in the repo.
 
 Note: Do not commit actual secrets.
 
 ## Supabase Table Schema
 
 Create a table named `students` with columns:
-- id: uuid (default: gen_random_uuid()) or bigint with identity
+- id: uuid primary key default gen_random_uuid()
 - first_name: text not null
 - last_name: text not null
-- email: text not null
-- age: int4 null
+- email: text unique not null
+- dob: date null
 - grade: text null
 - created_at: timestamptz default now()
 
 In SQL (Postgres):
 ```sql
+create extension if not exists pgcrypto;
 create table if not exists public.students (
   id uuid primary key default gen_random_uuid(),
   first_name text not null,
   last_name text not null,
-  email text not null,
-  age int,
+  email text unique not null,
+  dob date null,
   grade text,
   created_at timestamptz default now()
 );
 ```
-Set Row Level Security (RLS) as needed. For quick demos, you can enable read/write for anon role via policies.
+
+Enable RLS and, for demo use, you may add permissive anon policies:
+
+```sql
+alter table public.students enable row level security;
+
+create policy "Students read for anon" on public.students
+for select using (true);
+
+create policy "Students insert for anon" on public.students
+for insert with check (true);
+
+create policy "Students update for anon" on public.students
+for update using (true) with check (true);
+
+create policy "Students delete for anon" on public.students
+for delete using (true);
+```
+
+Warning: These policies allow full read/write with the anon key. Use stricter policies for production.
 
 ## Install & Run
 
