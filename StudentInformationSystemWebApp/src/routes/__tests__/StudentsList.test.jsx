@@ -76,6 +76,8 @@ describe("StudentsList", () => {
 
     // Search for Bob; since filtering is in useStudents, simulate by re-rendering hook with filtered items
     const searchInput = screen.getByRole("searchbox", { name: /search students/i });
+
+    // Trigger search change and await state update to eliminate act() warnings
     fireEvent.change(searchInput, { target: { value: "bob" } });
 
     // After change, component re-renders; emulate useStudents returning filtered results on next call
@@ -87,15 +89,16 @@ describe("StudentsList", () => {
       refetch,
     });
 
-    // Trigger a re-render by changing search again
+    // Trigger another change to cause rerender
     fireEvent.change(searchInput, { target: { value: "bob " } });
 
-    expect(await screen.findByText("Bob Jones")).toBeInTheDocument();
+    // Wait for the filtered row to appear to ensure async effects settled
+    await waitFor(() => expect(screen.getByText("Bob Jones")).toBeInTheDocument());
   });
 
   it("shows delete confirmation and calls deleteStudent on confirm", async () => {
     const items = [{ id: "1", name: "Alice Smith", email: "alice@example.com", age: 20 }];
-    const refetch = jest.fn();
+    const refetch = jest.fn().mockResolvedValue(undefined);
     useStudents.mockReturnValue({
       items,
       total: 1,
@@ -114,12 +117,19 @@ describe("StudentsList", () => {
     expect(screen.getByText(/Confirm delete/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /confirm/i }));
 
+    // Wait for delete async flow
     await waitFor(() => {
       expect(deleteStudent).toHaveBeenCalledWith("1");
     });
-    // After delete, refetch should be called
+
+    // After delete, refetch should be called and awaited
     await waitFor(() => {
       expect(refetch).toHaveBeenCalled();
+    });
+
+    // Confirm dialog should close; ensure it's removed to avoid act warnings
+    await waitFor(() => {
+      expect(screen.queryByText(/Confirm delete/i)).not.toBeInTheDocument();
     });
   });
 
@@ -143,12 +153,19 @@ describe("StudentsList", () => {
     fireEvent.click(screen.getByRole("button", { name: /delete alice smith/i }));
     fireEvent.click(screen.getByRole("button", { name: /confirm/i }));
 
+    // Ensure delete was attempted
     await waitFor(() => {
       expect(deleteStudent).toHaveBeenCalledWith("1");
     });
 
+    // Wait for alert side effect
     await waitFor(() => {
       expect(alertSpy).toHaveBeenCalled();
+    });
+
+    // Confirm dialog should close even on error
+    await waitFor(() => {
+      expect(screen.queryByText(/Confirm delete/i)).not.toBeInTheDocument();
     });
 
     alertSpy.mockRestore();
