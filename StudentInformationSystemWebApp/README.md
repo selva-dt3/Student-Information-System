@@ -23,7 +23,7 @@ Add-student failures:
   2) public.students has required columns: first_name, last_name, email (not null)
   3) RLS policies permit INSERT for your role
 
-Supabase schema (public.students):
+Supabase schema (public.students) used by the app:
 - id uuid pk default gen_random_uuid()
 - first_name text not null
 - last_name text not null
@@ -31,6 +31,11 @@ Supabase schema (public.students):
 - dob date null
 - grade text null
 - created_at timestamptz default now()
+
+Notes on fields:
+- The UI collects "Date of Birth" and sends it to the database as the "dob" column.
+- The app no longer uses an "age" field. If your table previously had an "age" column, remove it or ignore it; the app will not send it.
+- Optional fields address and phone may be sent if present in your schema; otherwise they are ignored by the database.
 
 RLS (demo): enable row level security and allow anon select/insert/update/delete (see README.SIS.md).
 

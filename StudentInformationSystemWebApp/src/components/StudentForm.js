@@ -13,8 +13,10 @@ export default function StudentForm({ initial = null, onCancel, onSubmit }) {
     first_name: '',
     last_name: '',
     email: '',
-    age: '',
+    date_of_birth: '',
     grade: '',
+    address: '',
+    phone: '',
   });
   const [errors, setErrors] = useState({});
   const [busy, setBusy] = useState(false);
@@ -25,8 +27,10 @@ export default function StudentForm({ initial = null, onCancel, onSubmit }) {
         first_name: initial.first_name || '',
         last_name: initial.last_name || '',
         email: initial.email || '',
-        age: initial.age == null ? '' : String(initial.age),
-        grade: initial.grade || '',
+        date_of_birth: initial.dob || initial.date_of_birth || '',
+        grade: initial.grade || initial.grade_level || '',
+        address: initial.address || '',
+        phone: initial.phone || '',
       });
     }
   }, [initial]);
@@ -77,16 +81,30 @@ export default function StudentForm({ initial = null, onCancel, onSubmit }) {
         </div>
 
         <div className="form-control">
-          <label htmlFor="age">Age</label>
-          <input id="age" name="age" type="number" min="3" max="120" value={values.age} onChange={onChange} placeholder="18" />
-          {errors.age && <span className="error">{errors.age}</span>}
+          <label htmlFor="date_of_birth">Date of Birth</label>
+          <input id="date_of_birth" name="date_of_birth" type="date" value={values.date_of_birth} onChange={onChange} />
+          {errors.date_of_birth && <span className="error">{errors.date_of_birth}</span>}
+        </div>
+      </div>
+
+      <div className="grid-2">
+        <div className="form-control">
+          <label htmlFor="grade">Grade</label>
+          <input id="grade" name="grade" value={values.grade} onChange={onChange} placeholder="10 or Grade 10" />
+          {errors.grade && <span className="error">{errors.grade}</span>}
+        </div>
+
+        <div className="form-control">
+          <label htmlFor="phone">Phone</label>
+          <input id="phone" name="phone" value={values.phone} onChange={onChange} placeholder="+1 555-123-4567" />
+          {errors.phone && <span className="error">{errors.phone}</span>}
         </div>
       </div>
 
       <div className="form-control">
-        <label htmlFor="grade">Grade</label>
-        <input id="grade" name="grade" value={values.grade} onChange={onChange} placeholder="10" />
-        {errors.grade && <span className="error">{errors.grade}</span>}
+        <label htmlFor="address">Address</label>
+        <input id="address" name="address" value={values.address} onChange={onChange} placeholder="123 Main St, Springfield" />
+        {errors.address && <span className="error">{errors.address}</span>}
       </div>
 
       <div className="actions">

@@ -54,6 +54,11 @@ create table if not exists public.students (
 );
 ```
 
+Note on fields:
+- The application uses "Date of Birth" and stores it in the "dob" column. There is no "age" column used anywhere.
+- If your table previously had an "age" field, remove it from your schema or leave it unused; the app will not reference it.
+- Optional "address" and "phone" fields are supported by the UI; if your database does not have these columns they will be ignored by Postgres.
+
 Enable RLS and, for demo use, you may add permissive anon policies:
 
 Troubleshooting INSERT (add student):

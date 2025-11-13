@@ -33,7 +33,7 @@ export function validateStudent(student) {
   /**
    * Validates a student object and returns { valid: boolean, errors: Record<string,string> }.
    * Required fields: first_name, last_name, email.
-   * Optional: age (>= 3 and <= 120), grade (K-12 or other text up to 10 chars).
+   * Optional: date_of_birth (YYYY-MM-DD), grade (text <= 20 chars), address, phone.
    */
   const errors = {};
   const s = student || {};
@@ -52,14 +52,24 @@ export function validateStudent(student) {
     if (!re.test(email)) errors.email = 'Invalid email format';
   }
 
-  if (s.age != null && s.age !== '') {
-    const n = Number(s.age);
-    if (Number.isNaN(n)) errors.age = 'Age must be a number';
-    else if (n < 3 || n > 120) errors.age = 'Age must be between 3 and 120';
+  // date_of_birth is optional; if provided, must be YYYY-MM-DD
+  if (s.date_of_birth) {
+    const dob = String(s.date_of_birth).trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) {
+      errors.date_of_birth = 'Use format YYYY-MM-DD';
+    }
   }
 
-  if (s.grade != null && String(s.grade).length > 10) {
-    errors.grade = 'Max 10 characters';
+  if (s.grade != null && String(s.grade).length > 20) {
+    errors.grade = 'Max 20 characters';
+  }
+
+  if (s.phone && String(s.phone).length > 40) {
+    errors.phone = 'Max 40 characters';
+  }
+
+  if (s.address && String(s.address).length > 200) {
+    errors.address = 'Max 200 characters';
   }
 
   return { valid: Object.keys(errors).length === 0, errors };
@@ -91,7 +101,7 @@ export async function listStudents() {
 
 // PUBLIC_INTERFACE
 export async function addStudent(student) {
-  /** Inserts a new student record. */
+  /** Inserts a new student record with only existing columns. */
   const { valid, errors } = validateStudent(student);
   if (!valid) {
     log('WARN', 'students.add_validation_failed', { errors });
@@ -132,6 +142,11 @@ export async function addStudent(student) {
       userMessage = 'Missing required fields. Please provide first name, last name, and a valid email.';
     }
 
+    // Non-existent column errors e.g., "Could not find 'age'"
+    if (msg.includes('column') && msg.includes('age')) {
+      userMessage = 'Unexpected column in payload. Please update the app to the latest version.';
+    }
+
     log('ERROR', 'students.add_failed', {
       duration_ms: duration,
       error: error.message,
@@ -152,7 +167,7 @@ export async function addStudent(student) {
 
 // PUBLIC_INTERFACE
 export async function updateStudent(id, student) {
-  /** Updates an existing student record by id. */
+  /** Updates an existing student record by id with only existing columns. */
   if (!id) throw new Error('Missing id');
 
   const { valid, errors } = validateStudent(student);
@@ -208,13 +223,25 @@ export async function deleteStudent(id) {
 }
 
 function sanitize(s) {
-  // Basic trimming to avoid leading/trailing spaces; never log sensitive data
-  const out = {
+  // Map UI fields to DB columns and trim. Use only existing columns.
+  // DB columns per README: first_name, last_name, email, dob, grade (+ optional address/phone if present in DB)
+  const trimmed = {
     first_name: String(s.first_name || '').trim(),
     last_name: String(s.last_name || '').trim(),
     email: String(s.email || '').trim().toLowerCase(),
-    age: s.age === '' || s.age == null ? null : Number(s.age),
+    // Accept both date_of_birth and dob from UI; store as 'dob'
+    dob: s.date_of_birth ? String(s.date_of_birth).trim() : (s.dob ? String(s.dob).trim() : null),
     grade: s.grade == null ? null : String(s.grade).trim(),
+    // Pass through optional fields only if provided; DB may ignore if not present
+    address: s.address ? String(s.address).trim() : null,
+    phone: s.phone ? String(s.phone).trim() : null,
   };
+
+  // Remove null/undefined keys to avoid sending absent columns explicitly
+  const out = {};
+  Object.keys(trimmed).forEach((k) => {
+    if (trimmed[k] !== null && trimmed[k] !== undefined && trimmed[k] !== '') out[k] = trimmed[k];
+  });
+
   return out;
 }

@@ -21,9 +21,9 @@ export default function StudentList({ students, onEdit, onDelete }) {
               <th>First</th>
               <th>Last</th>
               <th>Email</th>
-              <th>Age</th>
+              <th>DOB</th>
               <th>Grade</th>
-              <th style={{ width: 140 }}>Actions</th>
+              <th style={{ width: 180 }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -36,8 +36,8 @@ export default function StudentList({ students, onEdit, onDelete }) {
                 <td>{s.first_name}</td>
                 <td>{s.last_name}</td>
                 <td>{s.email}</td>
-                <td>{s.age ?? '-'}</td>
-                <td>{s.grade ?? '-'}</td>
+                <td>{s.dob || s.date_of_birth || '-'}</td>
+                <td>{s.grade ?? s.grade_level ?? '-'}</td>
                 <td className="actions-cell">
                   <button className="btn btn-small btn-secondary" onClick={() => onEdit(s)} aria-label={`Edit ${s.first_name} ${s.last_name}`}>Edit</button>
                   <button className="btn btn-small btn-danger" onClick={() => onDelete(s)} aria-label={`Delete ${s.first_name} ${s.last_name}`}>Delete</button>
