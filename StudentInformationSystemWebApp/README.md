@@ -34,6 +34,18 @@ Supabase schema (public.students) used by the app:
 - phone text null
 - created_at timestamptz default now()
 
+Search and Filters:
+- Top navigation includes a search bar with filters. Available filters:
+  - q: free text; applies to first_name, last_name, and email using ilike
+  - first_name: ilike match
+  - last_name: ilike match
+  - email: ilike match
+  - grade_level: exact match (eq); use q for broad matching if needed
+  - date_of_birth range: dob_start (>= YYYY-MM-DD), dob_end (<= YYYY-MM-DD)
+- Date format must be YYYY-MM-DD. If invalid, the date filter is ignored and a small inline hint shows.
+- Results update with a short debounce as you type. Click Search to submit immediately or Clear to reset all filters.
+- Empty state shows guidance to adjust filters or add a new student.
+
 Notes on fields:
 - The UI collects "Date of Birth" and sends it to the database as "date_of_birth".
 - The UI sends grade as "grade_level".

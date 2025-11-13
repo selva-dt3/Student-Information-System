@@ -75,6 +75,11 @@ export function validateStudent(student) {
   return { valid: Object.keys(errors).length === 0, errors };
 }
 
+/** Build common select order clause */
+function baseSelect(query) {
+  return query.select('*').order('created_at', { ascending: false });
+}
+
 // PUBLIC_INTERFACE
 export async function listStudents() {
   /** Fetches all students ordered by created_at desc. */
@@ -87,7 +92,7 @@ export async function listStudents() {
   }
 
   const start = Date.now();
-  const { data, error } = await supabase.from(TABLE).select('*').order('created_at', { ascending: false });
+  const { data, error } = await baseSelect(supabase.from(TABLE));
   const duration = Date.now() - start;
 
   if (error) {
@@ -97,6 +102,119 @@ export async function listStudents() {
   }
   log('INFO', 'students.list_success', { duration_ms: duration, count: data?.length || 0 });
   return data || [];
+}
+
+// PUBLIC_INTERFACE
+export async function listStudentsFiltered(filters = {}, options = {}) {
+  /**
+   * Returns filtered list of students using Supabase query operators.
+   * Filters supported:
+   * - q: free text applied to first_name, last_name, email via ilike
+   * - first_name: ilike
+   * - last_name: ilike
+   * - email: ilike
+   * - grade_level: eq (exact) if provided; if not exact preference, users can use q for broad match
+   * - dob_start: date_of_birth >= YYYY-MM-DD
+   * - dob_end: date_of_birth <= YYYY-MM-DD
+   *
+   * Options:
+   * - page: number (1-based)
+   * - pageSize: number
+   *
+   * Returns: { data: Student[], page, pageSize, total: number|null }
+   * Note: Supabase .range() with count can be used; here we keep count minimal for perf and return null unless requested.
+   */
+  let supabase;
+  try {
+    supabase = getSupabaseClient();
+  } catch (e) {
+    log('ERROR', 'students.filter_supabase_not_configured', { error: e.message });
+    throw new Error('Supabase not configured. Please set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY (or REACT_APP_SUPABASE_KEY).');
+  }
+
+  const f = normalizeFilters(filters);
+  const { page = 1, pageSize = 50, withCount = false } = options || {};
+  const from = Math.max(0, (page - 1) * pageSize);
+  const to = Math.max(from, from + pageSize - 1);
+
+  let query = supabase.from(TABLE);
+
+  // Free text 'q' → ilike on first_name, last_name, email using OR
+  if (f.q) {
+    // Use PostgREST or filter with .or
+    const orClause = [
+      `first_name.ilike.%${escapeLike(f.q)}%`,
+      `last_name.ilike.%${escapeLike(f.q)}%`,
+      `email.ilike.%${escapeLike(f.q)}%`,
+    ].join(',');
+    query = query.or(orClause);
+  }
+
+  if (f.first_name) query = query.ilike('first_name', `%${escapeLike(f.first_name)}%`);
+  if (f.last_name) query = query.ilike('last_name', `%${escapeLike(f.last_name)}%`);
+  if (f.email) query = query.ilike('email', `%${escapeLike(f.email)}%`);
+  if (f.grade_level) query = query.eq('grade_level', f.grade_level);
+
+  if (f.dob_start) query = query.gte('date_of_birth', f.dob_start);
+  if (f.dob_end) query = query.lte('date_of_birth', f.dob_end);
+
+  // Order and pagination
+  query = baseSelect(query).range(from, to);
+
+  const start = Date.now();
+  const { data, error, count } = withCount
+    ? await query.select('*', { count: 'exact' })
+    : await query;
+  const duration = Date.now() - start;
+
+  if (error) {
+    log('ERROR', 'students.filter_failed', { duration_ms: duration, error: error.message });
+    throw new Error('Failed to fetch filtered students.');
+  }
+
+  // Keep logs minimal in production-like builds
+  if ((process.env.REACT_APP_NODE_ENV || process.env.NODE_ENV) !== 'production') {
+    log('INFO', 'students.filter_success', {
+      duration_ms: duration,
+      page, pageSize,
+      returned: data?.length || 0,
+      count: withCount ? count ?? null : null
+    });
+  }
+
+  return {
+    data: data || [],
+    page,
+    pageSize,
+    total: withCount ? count ?? null : null,
+  };
+}
+
+function normalizeFilters(f = {}) {
+  const out = {
+    q: (f.q || '').trim(),
+    first_name: (f.first_name || '').trim(),
+    last_name: (f.last_name || '').trim(),
+    email: (f.email || '').trim(),
+    grade_level: (f.grade_level || '').trim(),
+    dob_start: (f.dob_start || '').trim(),
+    dob_end: (f.dob_end || '').trim(),
+  };
+
+  // Validate date format; if invalid, drop to avoid server errors
+  const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s);
+  if (out.dob_start && !isDate(out.dob_start)) out.dob_start = '';
+  if (out.dob_end && !isDate(out.dob_end)) out.dob_end = '';
+  if (out.dob_start && out.dob_end && out.dob_start > out.dob_end) {
+    // swap or drop end; we choose to drop end
+    out.dob_end = '';
+  }
+  return out;
+}
+
+function escapeLike(s) {
+  // Suppress LIKE wildcards injection by escaping % and _
+  return String(s).replace(/[%_]/g, (m) => `\\${m}`);
 }
 
 /**

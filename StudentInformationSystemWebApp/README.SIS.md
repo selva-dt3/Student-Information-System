@@ -61,6 +61,7 @@ create table if not exists public.students (
 Note on fields:
 - The application uses "Date of Birth" as "date_of_birth". Legacy "dob" is no longer used in payloads (display still tolerates existing rows with dob).
 - The application uses "grade_level" (string) for grade. Legacy "grade" is tolerated on read.
+- Search filters never reference legacy aliases; they use "date_of_birth" and "grade_level".
 - Optional "address" and "phone" fields are supported by the UI; if your database does not have these columns they will be ignored by Postgres.
 
 Enable RLS and, for demo use, you may add permissive anon policies:
@@ -116,6 +117,12 @@ npm test
 - Use "+ Add Student" to create a record.
 - Click "Edit" to modify.
 - Click "Delete" to remove; a confirmation dialog will appear.
+- Use the "Search Students" bar to filter:
+  - q: free text across first_name, last_name, email (ilike)
+  - first_name/last_name/email: ilike
+  - grade_level: exact match
+  - date_of_birth range: set "DOB start" and/or "DOB end" (YYYY-MM-DD). Invalid formats are ignored and a hint is shown.
+  - Filters are debounced; press "Search" to execute immediately or "Clear" to reset all.
 
 ## Logging
 

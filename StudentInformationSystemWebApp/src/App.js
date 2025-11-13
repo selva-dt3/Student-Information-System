@@ -3,7 +3,8 @@ import './App.css';
 import './index.css';
 import StudentList from './components/StudentList';
 import StudentForm from './components/StudentForm';
-import { addStudent, deleteStudent, listStudents, updateStudent } from './services/studentsService';
+import StudentsSearchBar from './components/StudentsSearchBar';
+import { addStudent, deleteStudent, listStudents, listStudentsFiltered, updateStudent } from './services/studentsService';
 
 // PUBLIC_INTERFACE
 function App() {
@@ -20,6 +21,15 @@ function App() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [error, setError] = useState('');
+  const [filters, setFilters] = useState({
+    q: '',
+    first_name: '',
+    last_name: '',
+    email: '',
+    grade_level: '',
+    dob_start: '',
+    dob_end: '',
+  });
 
   const brand = useMemo(() => ({
     appName: 'Student Information System',
@@ -30,6 +40,7 @@ function App() {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
+  // Initial load (unfiltered)
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -47,6 +58,50 @@ function App() {
     })();
     return () => { mounted = false; };
   }, []);
+
+  // Trigger filtered search when filters change (from search bar)
+  useEffect(() => {
+    let active = true;
+    const fetchFiltered = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        const res = await listStudentsFiltered(filters, { page: 1, pageSize: 100 });
+        if (!active) return;
+        setStudents(res.data);
+      } catch (e) {
+        if (!active) return;
+        setError(e.message || 'Search failed');
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    // If all filters are empty, fall back to full list
+    const allEmpty = Object.values(filters).every((v) => !v);
+    if (allEmpty) {
+      let mounted = true;
+      (async () => {
+        try {
+          setLoading(true);
+          const data = await listStudents();
+          if (mounted && active) setStudents(data);
+        } catch (e) {
+          if (mounted && active) {
+            setError('Could not load students. Check Supabase configuration.');
+            // eslint-disable-next-line no-console
+            console.error('[SIS] listStudents error', e);
+          }
+        } finally {
+          if (mounted && active) setLoading(false);
+        }
+      })();
+      return () => { mounted = false; };
+    } else {
+      fetchFiltered();
+      return () => { active = false; };
+    }
+  }, [filters]);
 
   // PUBLIC_INTERFACE
   const toggleTheme = () => setTheme((t) => (t === 'light' ? 'dark' : 'light'));
@@ -127,6 +182,14 @@ function App() {
           </div>
         </div>
       </header>
+
+      {/* Search and filter bar */}
+      <StudentsSearchBar
+        value={filters}
+        onChange={(f) => setFilters(f)}
+        onSubmit={(f) => setFilters(f)}
+        busy={loading}
+      />
 
       <main className="container">
         {error && <div className="alert alert-error" role="alert">{error}</div>}

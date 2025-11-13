@@ -29,7 +29,7 @@ export default function StudentList({ students, onEdit, onDelete }) {
           <tbody>
             {students.length === 0 ? (
               <tr>
-                <td colSpan={6} className="empty">No students found. Add one to get started.</td>
+                <td colSpan={6} className="empty">No students found. Try adjusting filters or add a new student.</td>
               </tr>
             ) : students.map((s) => {
               const displayDob = s.date_of_birth ?? s.dob ?? '-';
