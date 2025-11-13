@@ -7,7 +7,9 @@ import { listStudents, deleteStudent, getStudentById, createStudent, updateStude
 /**
  * Small utility to read feature flags
  */
+// PUBLIC_INTERFACE
 function useFeatureFlag(flagName) {
+  /** Returns whether a given feature flag is enabled via REACT_APP_FEATURE_FLAGS */
   const [enabled, setEnabled] = useState(false);
   useEffect(() => {
     const { FEATURE_FLAGS } = getEnv();
@@ -23,7 +25,7 @@ function useFeatureFlag(flagName) {
 function SearchBar({ value, onChange, placeholder = "Search students..." }) {
   /** SearchBar input for filtering list */
   return (
-    <div className="sis-searchbar">
+    <div className="sis-searchbar" style={{ width: 'min(380px, 100%)' }}>
       <input
         className="sis-input"
         type="search"
@@ -63,9 +65,9 @@ function ConfirmDialog({ open, title = "Confirm", message, onConfirm, onCancel }
 // PUBLIC_INTERFACE
 function StudentTable({ items, page, pageSize, total, onPageChange, onEdit, onDelete }) {
   /** Table for listing students with pagination controls */
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const totalPages = Math.max(1, Math.ceil(total / Math.max(1, pageSize)));
   return (
-    <div className="sis-card">
+    <div className="sis-card" role="region" aria-label="Students table">
       <div className="sis-table-responsive">
         <table className="sis-table">
           <thead>
@@ -73,7 +75,7 @@ function StudentTable({ items, page, pageSize, total, onPageChange, onEdit, onDe
               <th style={{textAlign:'left'}}>Name</th>
               <th style={{textAlign:'left'}}>Email</th>
               <th>Age</th>
-              <th style={{width: 160}}>Actions</th>
+              <th style={{width: 180}}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -91,8 +93,8 @@ function StudentTable({ items, page, pageSize, total, onPageChange, onEdit, onDe
                 <td style={{textAlign:'center'}}>{s.age}</td>
                 <td>
                   <div className="sis-table-actions">
-                    <button className="btn btn-secondary" onClick={() => onEdit(s.id)}>Edit</button>
-                    <button className="btn btn-danger" onClick={() => onDelete(s.id)}>Delete</button>
+                    <button className="btn btn-secondary" onClick={() => onEdit(s.id)} aria-label={`Edit ${s.name}`}>Edit</button>
+                    <button className="btn btn-danger" onClick={() => onDelete(s.id)} aria-label={`Delete ${s.name}`}>Delete</button>
                   </div>
                 </td>
               </tr>
@@ -100,7 +102,7 @@ function StudentTable({ items, page, pageSize, total, onPageChange, onEdit, onDe
           </tbody>
         </table>
       </div>
-      <div className="sis-pagination">
+      <div className="sis-pagination" aria-label="Pagination">
         <button className="btn" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>Prev</button>
         <span className="sis-page-indicator">Page {page} of {totalPages}</span>
         <button className="btn" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)}>Next</button>
@@ -144,21 +146,21 @@ function StudentForm({ initialValues = { name: '', email: '', age: '' }, onSubmi
   };
 
   return (
-    <form className="sis-form" onSubmit={handleSubmit} noValidate>
+    <form className="sis-form" onSubmit={handleSubmit} noValidate aria-label="Student form">
       <div className="sis-form-row">
         <label htmlFor="name">Name</label>
-        <input id="name" name="name" className="sis-input" value={form.name} onChange={handleChange} />
-        {errors.name && <div className="sis-error">{errors.name}</div>}
+        <input id="name" name="name" className="sis-input" value={form.name} onChange={handleChange} required aria-invalid={!!errors.name} />
+        {errors.name && <div className="sis-error" role="alert">{errors.name}</div>}
       </div>
       <div className="sis-form-row">
         <label htmlFor="email">Email</label>
-        <input id="email" name="email" className="sis-input" value={form.email} onChange={handleChange} />
-        {errors.email && <div className="sis-error">{errors.email}</div>}
+        <input id="email" name="email" className="sis-input" value={form.email} onChange={handleChange} required aria-invalid={!!errors.email} />
+        {errors.email && <div className="sis-error" role="alert">{errors.email}</div>}
       </div>
       <div className="sis-form-row">
         <label htmlFor="age">Age</label>
-        <input id="age" name="age" className="sis-input" value={form.age} onChange={handleChange} inputMode="numeric" />
-        {errors.age && <div className="sis-error">{errors.age}</div>}
+        <input id="age" name="age" className="sis-input" value={form.age} onChange={handleChange} inputMode="numeric" required aria-invalid={!!errors.age} />
+        {errors.age && <div className="sis-error" role="alert">{errors.age}</div>}
       </div>
       <div className="sis-actions">
         <button type="submit" className="btn btn-primary" disabled={submitting}>
@@ -184,7 +186,6 @@ function useStudents({ page, pageSize, search }) {
       try {
         const offset = (page - 1) * pageSize;
         const { data, count } = await listStudents({ limit: pageSize, offset, orderBy: 'created_at', ascending: false });
-        // Simple client-side filtering until we add server-side ilike
         const filtered = search
           ? (data || []).filter((d) => {
               const q = search.toLowerCase();
@@ -238,10 +239,10 @@ function StudentsListPage() {
     if (!confirmId) return;
     try {
       await deleteStudent(confirmId);
-      // naive refresh by resetting page triggers useEffect
       setConfirmId(null);
+      // trigger refetch by tweaking state
       setPage(1);
-      setSearch(s => s + ''); // minor state nudge to refetch
+      setSearch(s => s + '');
     } catch (err) {
       // eslint-disable-next-line no-alert
       alert(`Delete failed: ${err.message}`);
