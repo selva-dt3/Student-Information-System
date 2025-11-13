@@ -58,19 +58,7 @@ create table if not exists public.students (
 );
 ```
 
-Note on fields:
-- The application uses "Date of Birth" as "date_of_birth". Legacy "dob" is no longer used in payloads (display still tolerates existing rows with dob).
-- The application uses "grade_level" (string) for grade. Legacy "grade" is tolerated on read.
-- Search filters never reference legacy aliases; they use "date_of_birth" and "grade_level".
-- Optional "address" and "phone" fields are supported by the UI; if your database does not have these columns they will be ignored by Postgres.
-
 Enable RLS and, for demo use, you may add permissive anon policies:
-
-Troubleshooting INSERT (add student):
-- If the UI shows "Insert blocked by RLS policy...", confirm your project's role:
-  - Using anon key → role is anon
-  - Using an authenticated session → role is authenticated
-- Ensure an INSERT policy exists for that role. Example for anon:
 
 ```sql
 alter table public.students enable row level security;
@@ -80,10 +68,6 @@ for select using (true);
 
 create policy "Students insert for anon" on public.students
 for insert with check (true);
-
--- If using authenticated users instead of anon, use:
--- create policy "Students insert for authenticated" on public.students
--- for insert to authenticated with check (true);
 
 create policy "Students update for anon" on public.students
 for update using (true) with check (true);
@@ -114,19 +98,8 @@ npm test
 
 ## Usage
 
-- Use "+ Add Student" to create a record.
-- Click "Edit" to modify.
-- Click "Delete" to remove; a confirmation dialog will appear.
-- Use the "Search Students" bar to filter:
-  - q: free text across first_name, last_name, email (ilike)
-  - first_name/last_name/email: ilike
-  - grade_level: exact match
-  - date_of_birth range: set "DOB start" and/or "DOB end" (YYYY-MM-DD). Invalid formats are ignored and a hint is shown.
-  - Filters are debounced; press "Search" to execute immediately or "Clear" to reset all.
-- Pagination & Sorting:
-  - Navigate with Prev/Next, choose rows per page (10/25/50/100).
-  - Sort by clicking a column header; click again to toggle asc/desc.
-  - URL query params reflect state: page, pageSize, sortBy, sortDir, and filters.
+- Use the UI to manage students directly on the single page (no client-side routing).
+- The app performs CRUD using the Supabase JavaScript client.
 
 ## Logging
 
@@ -134,5 +107,4 @@ The app logs structured messages to the browser console in JSON format for key a
 
 ## Notes
 
-- All operations are performed directly from the client using the Supabase JavaScript client.
 - Ensure RLS policies permit the anon key to perform desired actions for your use case (demo vs production).

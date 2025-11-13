@@ -47,12 +47,10 @@ export function validateStudent(student) {
 
   if (s.email) {
     const email = String(s.email).trim();
-    // Simple email regex
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!re.test(email)) errors.email = 'Invalid email format';
   }
 
-  // date_of_birth is optional; if provided, must be YYYY-MM-DD
   if (s.date_of_birth) {
     const dob = String(s.date_of_birth).trim();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) {
@@ -75,12 +73,6 @@ export function validateStudent(student) {
   return { valid: Object.keys(errors).length === 0, errors };
 }
 
-/** Build common select order clause */
-function baseSelect(query) {
-  // Keep base select focused on the select part. Ordering is performed after filters are applied.
-  return query.select('*');
-}
-
 // PUBLIC_INTERFACE
 export async function listStudents() {
   /** Fetches all students ordered by created_at desc. */
@@ -93,193 +85,15 @@ export async function listStudents() {
   }
 
   const start = Date.now();
-  const { data, error } = await baseSelect(supabase.from(TABLE));
+  const { data, error } = await supabase.from(TABLE).select('*').order('created_at', { ascending: false });
   const duration = Date.now() - start;
 
   if (error) {
     log('ERROR', 'students.list_failed', { duration_ms: duration, error: error.message });
-    // Surface a friendly message while underlying details are in console logs
     throw new Error('Failed to fetch students. Verify RLS allows anon select and your Supabase URL/key are correct.');
   }
   log('INFO', 'students.list_success', { duration_ms: duration, count: data?.length || 0 });
   return data || [];
-}
-
-/**
- * Allowed sort columns to prevent errors or SQL injection-like issues.
- * Only whitelist supported real columns; do not allow legacy aliases.
- */
-const SORT_WHITELIST = new Set([
-  'first_name',
-  'last_name',
-  'email',
-  'grade_level',
-  'date_of_birth',
-  'created_at',
-]);
-
-/**
- * Validate and normalize sorting inputs.
- */
-function normalizeSort(sortBy, sortDir) {
-  const key = SORT_WHITELIST.has(String(sortBy || '').trim()) ? String(sortBy).trim() : 'created_at';
-  const dir = String(sortDir || '').toLowerCase() === 'asc' ? 'asc' : 'desc';
-  return { sortBy: key, ascending: dir === 'asc' };
-}
-
-// PUBLIC_INTERFACE
-export async function listStudentsFiltered(filters = {}, options = {}) {
-  /**
-   * Returns filtered list of students using Supabase query operators.
-   * Filters supported:
-   * - q: free text applied to first_name, last_name, email via ilike (OR)
-   * - first_name: ilike
-   * - last_name: ilike
-   * - email: ilike
-   * - grade_level: eq (exact)
-   * - dob_start: date_of_birth >= YYYY-MM-DD
-   * - dob_end: date_of_birth <= YYYY-MM-DD
-   *
-   * Options:
-   * - page: number (1-based)
-   * - pageSize: number
-   * - sortBy: one of SORT_WHITELIST
-   * - sortDir: 'asc' | 'desc'
-   * - withCount: boolean (default true)
-   *
-   * Returns: { data: Student[], page, pageSize, total: number|null, sortBy, sortDir }
-   */
-  let supabase;
-  try {
-    supabase = getSupabaseClient();
-  } catch (e) {
-    log('ERROR', 'students.filter_supabase_not_configured', { error: e.message });
-    throw new Error('Supabase not configured. Please set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY (or REACT_APP_SUPABASE_KEY).');
-  }
-
-  const f = normalizeFilters(filters);
-  const {
-    page = 1,
-    pageSize = 50,
-    sortBy: sb,
-    sortDir: sd,
-    withCount = true,
-  } = options || {};
-
-  const { sortBy, ascending } = normalizeSort(sb, sd);
-  const safePage = Number.isFinite(page) && page > 0 ? page : 1;
-  const safePageSize = Number.isFinite(pageSize) && pageSize > 0 && pageSize <= 500 ? pageSize : 50;
-
-  const from = Math.max(0, (safePage - 1) * safePageSize);
-  const to = Math.max(from, from + safePageSize - 1);
-
-  // Start from a PostgRESTFilterBuilder by calling select() immediately.
-  let query = supabase.from(TABLE).select('*');
-
-  // Build OR clause for free-text query across first_name, last_name, email.
-  let orClause = '';
-  if (f.q) {
-    orClause = [
-      `first_name.ilike.%${escapeLike(f.q)}%`,
-      `last_name.ilike.%${escapeLike(f.q)}%`,
-      `email.ilike.%${escapeLike(f.q)}%`,
-    ].join(',');
-    query = query.or(orClause);
-  }
-
-  // Compose additional filters via supported chaining
-  if (f.first_name) query = query.ilike('first_name', `%${escapeLike(f.first_name)}%`);
-  if (f.last_name) query = query.ilike('last_name', `%${escapeLike(f.last_name)}%`);
-  if (f.email) query = query.ilike('email', `%${escapeLike(f.email)}%`);
-  if (f.grade_level) query = query.eq('grade_level', f.grade_level);
-
-  if (f.dob_start) query = query.gte('date_of_birth', f.dob_start);
-  if (f.dob_end) query = query.lte('date_of_birth', f.dob_end);
-
-  // Order and pagination after filters.
-  query = query.order(sortBy, { ascending }).range(from, to);
-
-  const start = Date.now();
-  const { data, error, count } = withCount
-    ? await query.select('*', { count: 'exact' })
-    : await query;
-  const duration = Date.now() - start;
-
-  if (error) {
-    log('ERROR', 'students.filter_failed', {
-      duration_ms: duration,
-      error: error.message,
-      or_preview: orClause || null,
-      sortBy,
-      ascending,
-      page: safePage,
-      pageSize: safePageSize,
-    });
-    throw new Error('Failed to fetch filtered students.');
-  }
-
-  const env = (process.env.REACT_APP_NODE_ENV || process.env.NODE_ENV) || 'development';
-  if (env !== 'production') {
-    log('INFO', 'students.filter_success', {
-      duration_ms: duration,
-      page: safePage,
-      pageSize: safePageSize,
-      returned: data?.length || 0,
-      count: withCount ? count ?? null : null,
-      or_preview: orClause || null,
-      sortBy,
-      sortDir: ascending ? 'asc' : 'desc',
-    });
-  }
-
-  return {
-    data: data || [],
-    page: safePage,
-    pageSize: safePageSize,
-    total: withCount ? count ?? null : null,
-    sortBy,
-    sortDir: ascending ? 'asc' : 'desc',
-  };
-}
-
-function normalizeFilters(f = {}) {
-  const out = {
-    q: (f.q || '').trim(),
-    first_name: (f.first_name || '').trim(),
-    last_name: (f.last_name || '').trim(),
-    email: (f.email || '').trim(),
-    grade_level: (f.grade_level || '').trim(),
-    dob_start: (f.dob_start || '').trim(),
-    dob_end: (f.dob_end || '').trim(),
-  };
-
-  // Validate date format; if invalid, drop to avoid server errors
-  const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s);
-  if (out.dob_start && !isDate(out.dob_start)) out.dob_start = '';
-  if (out.dob_end && !isDate(out.dob_end)) out.dob_end = '';
-  if (out.dob_start && out.dob_end && out.dob_start > out.dob_end) {
-    // swap or drop end; we choose to drop end
-    out.dob_end = '';
-  }
-  return out;
-}
-
-function escapeLike(s) {
-  // Suppress LIKE wildcards injection by escaping % and _
-  return String(s).replace(/[%_]/g, (m) => `\\${m}`);
-}
-
-/**
- * Create a redacted copy of payload for logging to verify keys without PII.
- */
-function redactForLogging(payload) {
-  if (!payload) return {};
-  return {
-    has_first_name: Boolean(payload.first_name),
-    has_last_name: Boolean(payload.last_name),
-    has_email: Boolean(payload.email),
-    keys: Object.keys(payload).sort(),
-  };
 }
 
 // PUBLIC_INTERFACE
@@ -302,7 +116,6 @@ export async function addStudent(student) {
   }
   const payload = sanitize(student);
 
-  // Log a safe preview of the payload keys for verification (no PII)
   log('INFO', 'students.add_payload_keys', redactForLogging(payload));
 
   const start = Date.now();
@@ -310,23 +123,18 @@ export async function addStudent(student) {
   const duration = Date.now() - start;
 
   if (error) {
-    // Normalize common failure reasons into friendly messages
     const msg = String(error.message || '').toLowerCase();
     let userMessage = 'Failed to add student';
 
     if (msg.includes('unique') && msg.includes('email')) {
       userMessage = 'Email already exists. Please use a different email.';
     }
-
     if (msg.includes('rls') || msg.includes('row level security') || msg.includes('permission denied') || msg.includes('not allowed')) {
       userMessage = 'Insert blocked by RLS policy. Ensure anon (or authenticated) role has INSERT on public.students.';
     }
-
     if (msg.includes('null value') && (msg.includes('first_name') || msg.includes('last_name') || msg.includes('email'))) {
       userMessage = 'Missing required fields. Please provide first name, last name, and a valid email.';
     }
-
-    // Non-existent column errors
     if (msg.includes('column')) {
       userMessage = 'Unexpected column in payload. Please update the app to the latest version.';
     }
@@ -334,7 +142,6 @@ export async function addStudent(student) {
     log('ERROR', 'students.add_failed', {
       duration_ms: duration,
       error: error.message,
-      // Do not include PII fields; only include safe metadata
       fields_present: {
         first_name: Boolean(payload.first_name),
         last_name: Boolean(payload.last_name),
@@ -375,7 +182,6 @@ export async function updateStudent(id, student) {
   }
   const payload = sanitize(student);
 
-  // Log a safe preview of the payload keys for verification (no PII)
   log('INFO', 'students.update_payload_keys', { id, ...redactForLogging(payload) });
 
   const start = Date.now();
@@ -415,11 +221,22 @@ export async function deleteStudent(id) {
 }
 
 /**
+ * Create a redacted copy of payload for logging to verify keys without PII.
+ */
+function redactForLogging(payload) {
+  if (!payload) return {};
+  return {
+    has_first_name: Boolean(payload.first_name),
+    has_last_name: Boolean(payload.last_name),
+    has_email: Boolean(payload.email),
+    keys: Object.keys(payload).sort(),
+  };
+}
+
+/**
  * Normalize UI model to database column names (only supported columns):
  * - first_name, last_name, email, date_of_birth, grade_level, address, phone
- * Legacy note (read-only tolerance): We still accept legacy aliases if they are present
- * in incoming objects by mapping them internally, but we never emit/forward 'dob' or 'grade'
- * in any outgoing payload. All updates strictly use 'date_of_birth' and 'grade_level'.
+ * Legacy note: accept 'dob' and 'grade' on input, map internally, but never emit them.
  */
 function sanitize(s) {
   const trimmed = {
@@ -436,7 +253,6 @@ function sanitize(s) {
     phone: s.phone ? String(s.phone).trim() : null,
   };
 
-  // Remove null/undefined/empty keys
   const out = {};
   Object.keys(trimmed).forEach((k) => {
     if (trimmed[k] !== null && trimmed[k] !== undefined && trimmed[k] !== '') out[k] = trimmed[k];
