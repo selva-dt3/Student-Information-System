@@ -34,30 +34,25 @@ Supabase schema (public.students) used by the app:
 - phone text null
 - created_at timestamptz default now()
 
-Navigation and Pages:
-- Home (/) provides a simple landing page with a link to Search Students.
-- Search Students (/search) is a dedicated page for searching and managing students:
-  - Reuses the StudentsSearchBar and StudentList components
-  - Debounced filter updates, explicit Search and Clear actions
-  - Server-backed pagination (Prev/Next, Rows per page) and sorting (click header)
-  - Full details visible: first_name, last_name, email, date_of_birth, grade_level, address, phone, created_at, updated_at (if available)
-  - Add/Edit/Delete actions available on this page
-
 Search, Filters, Pagination, and Sorting:
-- Filters:
-  - q: free text across first_name, last_name, email (ilike)
+- Top navigation includes a search bar with filters. Available filters:
+  - q: free text; applies to first_name, last_name, and email using ilike
   - first_name: ilike match
   - last_name: ilike match
   - email: ilike match
-  - grade_level: exact match (eq)
+  - grade_level: exact match (eq); use q for broad matching if needed
   - date_of_birth range: dob_start (>= YYYY-MM-DD), dob_end (<= YYYY-MM-DD)
 - Date format must be YYYY-MM-DD. If invalid, the date filter is ignored and a small inline hint shows.
 - Results update with a short debounce as you type. Click Search to submit immediately or Clear to reset all filters.
-- State is preserved in URL query params: page, pageSize, sortBy, sortDir, and the filters.
-
-Sorting:
-- Click table headers to sort by: first_name, last_name, email, grade_level, date_of_birth, created_at, updated_at.
-- Sorting toggles asc/desc on repeated clicks; state is preserved in URL.
+- Empty state shows guidance to adjust filters or add a new student.
+- Server-backed pagination:
+  - Use the Prev/Next buttons and the "Rows per page" selector (10/25/50/100).
+  - The footer shows "Showing X-Y of Z".
+  - State is preserved in URL query params: page, pageSize.
+- Sorting:
+  - Click table headers to sort by: first_name, last_name, email, grade_level, date_of_birth, created_at.
+  - Sorting toggles asc/desc on repeated clicks; state is preserved in URL as sortBy, sortDir.
+  - Sorting keys are whitelisted to avoid errors; legacy fields are not used.
 
 Notes on fields:
 - The UI collects "Date of Birth" and sends it to the database as "date_of_birth".
