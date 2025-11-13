@@ -48,14 +48,16 @@ export default function StudentForm({
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const v = name === "age" ? value.replace(/[^\d]/g, "") : value;
-    const next = { ...form, [name]: v };
-    setForm(next);
+    // For age, accept only digits; other fields pass-through
+    const v = name === "age" ? String(value || "").replace(/[^\d]/g, "") : value;
+    setForm((prev) => ({ ...prev, [name]: v }));
   };
 
   const handleBlur = () => {
-    const valid = runValidation();
-    if (!valid) {
+    // Validate on blur but never block typing; only update errors state
+    try {
+      runValidation();
+    } catch (err) {
       logMinimalError("StudentForm.blurValidation", { code: "FIELD_ERRORS" });
     }
   };
@@ -81,6 +83,7 @@ export default function StudentForm({
         <input
           id="firstName"
           name="firstName"
+          type="text"
           className="sis-input"
           value={form.firstName}
           onChange={handleChange}
@@ -97,6 +100,7 @@ export default function StudentForm({
         <input
           id="lastName"
           name="lastName"
+          type="text"
           className="sis-input"
           value={form.lastName}
           onChange={handleChange}
@@ -113,6 +117,7 @@ export default function StudentForm({
         <input
           id="email"
           name="email"
+          type="email"
           className="sis-input"
           value={form.email}
           onChange={handleChange}
@@ -130,6 +135,7 @@ export default function StudentForm({
         <input
           id="enrollmentDate"
           name="enrollmentDate"
+          type="text"
           className="sis-input"
           value={form.enrollmentDate}
           onChange={handleChange}
@@ -167,6 +173,7 @@ export default function StudentForm({
         <input
           id="age"
           name="age"
+          type="text"
           className="sis-input"
           value={form.age}
           onChange={handleChange}
