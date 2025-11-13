@@ -34,7 +34,36 @@ Supabase schema (public.students) used by the app:
 - phone text null
 - created_at timestamptz default now()
 
-Notes:
-- All operations are performed client-side using the Supabase JavaScript client.
-- Runs as a single-page app without client-side routing.
-- See README.SIS.md for full setup, schema, and usage details.
+Navigation and Pages:
+- Home (/) provides a simple landing page with a link to Search Students.
+- Search Students (/search) is a dedicated page for searching and managing students:
+  - Reuses the StudentsSearchBar and StudentList components
+  - Debounced filter updates, explicit Search and Clear actions
+  - Server-backed pagination (Prev/Next, Rows per page) and sorting (click header)
+  - Full details visible: first_name, last_name, email, date_of_birth, grade_level, address, phone, created_at, updated_at (if available)
+  - Add/Edit/Delete actions available on this page
+
+Search, Filters, Pagination, and Sorting:
+- Filters:
+  - q: free text across first_name, last_name, email (ilike)
+  - first_name: ilike match
+  - last_name: ilike match
+  - email: ilike match
+  - grade_level: exact match (eq)
+  - date_of_birth range: dob_start (>= YYYY-MM-DD), dob_end (<= YYYY-MM-DD)
+- Date format must be YYYY-MM-DD. If invalid, the date filter is ignored and a small inline hint shows.
+- Results update with a short debounce as you type. Click Search to submit immediately or Clear to reset all filters.
+- State is preserved in URL query params: page, pageSize, sortBy, sortDir, and the filters.
+
+Sorting:
+- Click table headers to sort by: first_name, last_name, email, grade_level, date_of_birth, created_at, updated_at.
+- Sorting toggles asc/desc on repeated clicks; state is preserved in URL.
+
+Notes on fields:
+- The UI collects "Date of Birth" and sends it to the database as "date_of_birth".
+- The UI sends grade as "grade_level".
+- Optional fields address and phone may be sent if present in your schema; otherwise they are ignored by the database.
+
+RLS (demo): enable row level security and allow anon select/insert/update/delete (see README.SIS.md).
+
+See README.SIS.md for full setup, schema, and usage details.

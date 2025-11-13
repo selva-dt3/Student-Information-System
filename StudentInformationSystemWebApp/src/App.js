@@ -5,18 +5,14 @@ import './index.css';
 // PUBLIC_INTERFACE
 function App() {
   /**
-   * Single-page home app (pre-routing version)
-   * - Simple header with theme toggle
-   * - Basic welcome card
+   * Home page
+   * - Serves as a simple landing page with navigation to the dedicated Search Students page
    */
   const [theme, setTheme] = useState('light');
-  const brand = useMemo(
-    () => ({
-      appName: 'Student Information System',
-      subtitle: 'Manage student records with Supabase',
-    }),
-    []
-  );
+  const brand = useMemo(() => ({
+    appName: 'Student Information System',
+    subtitle: 'Manage student records with Supabase',
+  }), []);
   const toggleTheme = () => setTheme((t) => (t === 'light' ? 'dark' : 'light'));
 
   useEffect(() => {
@@ -42,6 +38,7 @@ function App() {
             >
               {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
             </button>
+            <a className="btn btn-primary" href="/search">Search Students</a>
           </div>
         </div>
       </header>
@@ -50,10 +47,11 @@ function App() {
         <div className="card">
           <h3 className="card-title">Welcome</h3>
           <p>
-            This is the Student Information System demo application.
+            Use the Search Students page to filter, sort, and paginate through student records.
+            You can add, edit, and delete students from there.
           </p>
-          <p className="muted">
-            Use the app to add, edit, and manage student records with Supabase.
+          <p>
+            Get started: <a className="btn btn-outline" href="/search">Go to Search Students →</a>
           </p>
         </div>
         <footer className="footer">
