@@ -23,6 +23,7 @@ Set:
 
 Optional:
 - REACT_APP_FEATURE_FLAGS=realtime (enables live updates via Supabase Realtime for students table)
+- REACT_APP_LOG_LEVEL=info (error|warn|info|debug)
 
 2) Install and run:
 ```
@@ -34,11 +35,50 @@ Open http://localhost:3000
 ## CRUD Usage
 
 - List: Home route "/" shows students with search box and paging controls
-- Create: Click "+ New Student" (or "Add" in navbar), fill Name, Email, Age -> Save
+- Create: Click "+ New Student" (or "Add" in navbar), fill First name, Last name, Email, Enrollment date, Status, and optional Age → Save
 - Edit: On list, use "Edit" per row to update existing record
 - Delete: On list, click "Delete" per row and confirm in the dialog
 
-Table schema expected in Supabase: students(id, name, email, age, created_at)
+Expected Supabase table: public.students with fields:
+- id (uuid), first_name (text), last_name (text), email (text unique), enrollment_date (date), status (text), age (int), created_at (timestamptz), and a generated name (text) for display
+
+See docs/supabase-setup.md for full SQL.
+
+## Environment Variables
+
+These variables configure the app (Create React App uses the REACT_APP_ prefix):
+
+- REACT_APP_SUPABASE_URL: Supabase Project URL (Settings → API)
+- REACT_APP_SUPABASE_ANON_KEY: Supabase anon public key (Settings → API)
+- REACT_APP_FEATURE_FLAGS: Comma-separated flags, e.g., "realtime"
+- REACT_APP_LOG_LEVEL: Log verbosity for minimal diagnostics (error|warn|info|debug)
+
+Feature flags:
+- realtime: Enables live updates via Supabase Realtime for the students table (handled by src/hooks/useRealtimeStudents.js). Remove this flag to disable subscriptions.
+
+## Run, Test, Build
+
+- Development:
+  ```
+  npm install
+  npm start
+  ```
+  The app will be available at http://localhost:3000.
+
+- Tests:
+  ```
+  npm test
+  ```
+
+- Production build:
+  ```
+  npm run build
+  ```
+
+- Lint:
+  ```
+  npm run lint
+  ```
 
 ## Project Structure
 
@@ -46,16 +86,19 @@ Table schema expected in Supabase: students(id, name, email, age, created_at)
 - src/services/studentService.js: Supabase CRUD operations
 - src/lib/supabaseClient.js: Client initialization from env
 - src/config/env.js: Environment handling and validation
+- src/config/featureFlags.js: Feature flag parsing helpers
+- src/hooks/useRealtimeStudents.js: Realtime subscription to public.students
 - src/App.css: Green theme styles and responsive components
 
-## Scripts
+## Supabase Setup
 
-- npm start: Dev server
-- npm test: Run tests
-- npm run build: Production build
-- npm run lint: Basic linting
+Follow docs/supabase-setup.md to:
+- Create the students table
+- Enable RLS and apply demo policies
+- Optionally enable Realtime
+- Configure environment variables
 
 ## Notes
 
-- Ensure your Supabase table "students" exists and fields match the UI.
-- For realtime, keep REACT_APP_FEATURE_FLAGS=realtime to allow future subscription integration.
+- Ensure your Supabase table "students" exists and fields match the UI and schema described in docs/supabase-setup.md.
+- To disable realtime, remove the "realtime" flag from REACT_APP_FEATURE_FLAGS.
