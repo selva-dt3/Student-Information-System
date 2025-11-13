@@ -28,14 +28,13 @@ export default function StudentForm({ initial = null, onCancel, onSubmit }) {
 
   useEffect(() => {
     if (initial) {
+      // Normalize strictly to supported columns; do not propagate legacy 'dob' into edit values.
       setValues({
         first_name: initial.first_name || '',
         last_name: initial.last_name || '',
         email: initial.email || '',
-        // Prefer date_of_birth; fall back to legacy dob if present
-        date_of_birth: initial.date_of_birth || initial.dob || '',
-        // Prefer grade_level; fall back to legacy grade if present
-        grade_level: initial.grade_level || initial.grade || '',
+        date_of_birth: initial.date_of_birth || '',
+        grade_level: initial.grade_level || '',
         address: initial.address || '',
         phone: initial.phone || '',
       });

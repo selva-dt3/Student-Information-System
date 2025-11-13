@@ -245,9 +245,11 @@ export async function deleteStudent(id) {
 }
 
 /**
- * Normalize UI model to database column names:
+ * Normalize UI model to database column names (only supported columns):
  * - first_name, last_name, email, date_of_birth, grade_level, address, phone
- * Accept and map legacy aliases if provided (dob -> date_of_birth, grade -> grade_level).
+ * Legacy note (read-only tolerance): We still accept legacy aliases if they are present
+ * in incoming objects by mapping them internally, but we never emit/forward 'dob' or 'grade'
+ * in any outgoing payload. All updates strictly use 'date_of_birth' and 'grade_level'.
  */
 function sanitize(s) {
   const trimmed = {

@@ -69,9 +69,14 @@ function App() {
   const onSubmitForm = async (vals) => {
     try {
       if (editing) {
+        // Safe logging of keys to ensure no legacy 'dob' leaks into update payload
+        // eslint-disable-next-line no-console
+        console.info('[SIS] ui.update_payload_keys_preview', { keys: Object.keys(vals || {}).sort() });
         const updated = await updateStudent(editing.id, vals);
         setStudents((list) => list.map((s) => (s.id === editing.id ? updated : s)));
       } else {
+        // eslint-disable-next-line no-console
+        console.info('[SIS] ui.add_payload_keys_preview', { keys: Object.keys(vals || {}).sort() });
         const created = await addStudent(vals);
         setStudents((list) => [created, ...list]);
       }
