@@ -135,7 +135,7 @@ export default function StudentForm({
         <input
           id="enrollmentDate"
           name="enrollmentDate"
-          type="text"
+          type="date"
           className="sis-input"
           value={form.enrollmentDate}
           onChange={handleChange}
