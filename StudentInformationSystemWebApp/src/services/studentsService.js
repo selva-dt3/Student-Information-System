@@ -68,7 +68,14 @@ export function validateStudent(student) {
 // PUBLIC_INTERFACE
 export async function listStudents() {
   /** Fetches all students ordered by created_at desc. */
-  const supabase = getSupabaseClient();
+  let supabase;
+  try {
+    supabase = getSupabaseClient();
+  } catch (e) {
+    log('ERROR', 'students.list_supabase_not_configured', { error: e.message });
+    throw new Error('Supabase not configured. Please set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY.');
+  }
+
   const start = Date.now();
   const { data, error } = await supabase.from(TABLE).select('*').order('created_at', { ascending: false });
   const duration = Date.now() - start;
@@ -92,7 +99,13 @@ export async function addStudent(student) {
     throw e;
   }
 
-  const supabase = getSupabaseClient();
+  let supabase;
+  try {
+    supabase = getSupabaseClient();
+  } catch (e) {
+    log('ERROR', 'students.add_supabase_not_configured', { error: e.message });
+    throw new Error('Supabase not configured. Please set required environment variables.');
+  }
   const payload = sanitize(student);
   const start = Date.now();
   const { data, error } = await supabase.from(TABLE).insert([payload]).select().single();
@@ -119,7 +132,13 @@ export async function updateStudent(id, student) {
     throw e;
   }
 
-  const supabase = getSupabaseClient();
+  let supabase;
+  try {
+    supabase = getSupabaseClient();
+  } catch (e) {
+    log('ERROR', 'students.update_supabase_not_configured', { id, error: e.message });
+    throw new Error('Supabase not configured. Please set required environment variables.');
+  }
   const payload = sanitize(student);
   const start = Date.now();
   const { data, error } = await supabase.from(TABLE).update(payload).eq('id', id).select().single();
@@ -138,7 +157,13 @@ export async function deleteStudent(id) {
   /** Deletes a student by id. */
   if (!id) throw new Error('Missing id');
 
-  const supabase = getSupabaseClient();
+  let supabase;
+  try {
+    supabase = getSupabaseClient();
+  } catch (e) {
+    log('ERROR', 'students.delete_supabase_not_configured', { id, error: e.message });
+    throw new Error('Supabase not configured. Please set required environment variables.');
+  }
   const start = Date.now();
   const { error } = await supabase.from(TABLE).delete().eq('id', id);
   const duration = Date.now() - start;
