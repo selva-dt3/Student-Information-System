@@ -164,3 +164,40 @@ Notes:
 - src/hooks/useRealtimeStudents.js for realtime subscription
 - src/config/env.js for environment handling
 - src/config/featureFlags.js for feature flag parsing
+
+## Final Checklist
+
+Use this quick checklist to verify your Supabase and app configuration is correct before running the app.
+
+- Realtime for students table is enabled
+  1. In your Supabase project, go to Database → Replication → Realtime.
+  2. Ensure Realtime is enabled for the desired scope (entire public schema or explicitly for the students table).
+  3. Confirm INSERT, UPDATE, and DELETE events are included for public.students.
+  4. If you limit Realtime to specific tables, make sure public.students appears in the enabled tables list.
+
+- Row Level Security (RLS) policies are applied
+  1. Open SQL Editor and run the policies from the “Row Level Security (RLS)” section above.
+  2. Verify RLS is enabled: alter table public.students enable row level security; is in effect.
+  3. For demo usage, anon policies should allow select/insert/update/delete as documented.
+  4. For production, replace anon with authenticated and enforce business rules (ownership checks, etc.).
+
+- App feature flag for realtime is set (optional)
+  1. In your .env file, set:
+     - REACT_APP_FEATURE_FLAGS=realtime
+  2. The app uses this flag to subscribe to Supabase Realtime via src/hooks/useRealtimeStudents.js.
+  3. To disable live updates, remove realtime from REACT_APP_FEATURE_FLAGS or leave it empty.
+
+- Environment variables are present
+  - Required:
+    - REACT_APP_SUPABASE_URL
+    - REACT_APP_SUPABASE_ANON_KEY
+  - Optional:
+    - REACT_APP_FEATURE_FLAGS (e.g., realtime)
+    - REACT_APP_LOG_LEVEL (error|warn|info|debug)
+
+- Smoke test
+  1. Run npm install and npm start.
+  2. Create a student in the UI.
+  3. In another browser/tab or directly in the Supabase Table Editor, change or insert a record:
+     - If REACT_APP_FEATURE_FLAGS includes realtime and Realtime is enabled in Supabase, the list should update without a full refresh.
+  4. If you see permission errors, revisit the RLS section above.

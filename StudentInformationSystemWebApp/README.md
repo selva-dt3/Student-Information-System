@@ -44,7 +44,7 @@ Open http://localhost:3000
 Expected Supabase table: public.students with fields:
 - id (uuid), first_name (text), last_name (text), email (text unique), enrollment_date (date), status (text), age (int), created_at (timestamptz), and a generated name (text) for display
 
-See docs/supabase-setup.md for full SQL.
+See docs/supabase-setup.md for full SQL. For a quick go-live validation, see the Final Checklist at the end of docs/supabase-setup.md.
 
 ## Environment Variables
 
