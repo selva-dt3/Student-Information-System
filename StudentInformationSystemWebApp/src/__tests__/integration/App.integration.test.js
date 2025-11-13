@@ -9,22 +9,23 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../../App';
 
+// Use a safe, self-referential chain to avoid temporal dead zone issues
 jest.mock('../../supabaseClient', () => {
   let client = null;
   return {
     getSupabaseClient: () => {
       if (!client) {
-        // Provide a default client that returns empty list to keep UI consistent
-        const range = jest.fn().mockReturnValue({
-          select: (_s, { count }) => Promise.resolve({ data: [], error: null, count: 0 }),
-        });
-        const order = jest.fn().mockReturnValue({ range });
-        const lte = jest.fn().mockReturnValue({ order, range });
-        const gte = jest.fn().mockReturnValue({ lte, order, range });
-        const eq = jest.fn().mockReturnValue({ gte, lte, order, range });
-        const ilike = jest.fn().mockReturnValue({ ilike, eq, gte, lte, order, range });
-        const or = jest.fn().mockReturnValue({ ilike, eq, gte, lte, order, range });
-        const select = jest.fn().mockReturnValue({ or, ilike, eq, gte, lte, order, range });
+        const chain = {};
+        // chain methods always return the same chain
+        chain.range = jest.fn(() => chain);
+        chain.order = jest.fn(() => chain);
+        chain.lte = jest.fn(() => chain);
+        chain.gte = jest.fn(() => chain);
+        chain.eq = jest.fn(() => chain);
+        chain.ilike = jest.fn(() => chain);
+        chain.or = jest.fn(() => chain);
+        // select returns the chain; consuming code awaits later, but our tests don't rely on that awaited value directly here
+        const select = jest.fn((_sel = '*', _opts = {}) => chain);
         client = { from: () => ({ select }) };
       }
       return client;
@@ -36,8 +37,12 @@ jest.mock('../../supabaseClient', () => {
 describe('App integration flows', () => {
   it('renders header and counters', async () => {
     render(<App />);
+    // Header brand title
     expect(screen.getByText(/Student Information System/i)).toBeInTheDocument();
-    expect(await screen.findByText(/Students/i)).toBeInTheDocument();
+    // Use a role-based, unambiguous heading for "Students"
+    expect(
+      await screen.findByRole('heading', { name: /^Students$/i })
+    ).toBeInTheDocument();
   });
 
   it('opens add form', async () => {
