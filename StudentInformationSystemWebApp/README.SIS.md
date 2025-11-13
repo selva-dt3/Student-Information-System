@@ -18,9 +18,12 @@ A simple, single-page React app to manage students with Supabase as the backend.
 Set these in your environment (e.g., a local `.env` file at the project root of this app). Copy `.env.example` to `.env` and fill in your values:
 
 - REACT_APP_SUPABASE_URL
-- REACT_APP_SUPABASE_ANON_KEY
+- REACT_APP_SUPABASE_ANON_KEY (preferred) or REACT_APP_SUPABASE_KEY
 
 The project already has other REACT_APP_* variables available; we only use the two above specifically for Supabase.
+
+At runtime, the app logs a one-time diagnostics entry in the browser console:
+- Look for "[SIS] Supabase env diagnostics" to see which variables were found and any issues detected.
 
 Example `.env.example` is included in the repo.
 

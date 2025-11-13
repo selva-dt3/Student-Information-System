@@ -73,7 +73,7 @@ export async function listStudents() {
     supabase = getSupabaseClient();
   } catch (e) {
     log('ERROR', 'students.list_supabase_not_configured', { error: e.message });
-    throw new Error('Supabase not configured. Please set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY.');
+    throw new Error('Supabase not configured. Please set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY (or REACT_APP_SUPABASE_KEY).');
   }
 
   const start = Date.now();
@@ -82,7 +82,8 @@ export async function listStudents() {
 
   if (error) {
     log('ERROR', 'students.list_failed', { duration_ms: duration, error: error.message });
-    throw new Error('Failed to fetch students');
+    // Surface a friendly message while underlying details are in console logs
+    throw new Error('Failed to fetch students. Verify RLS allows anon select and your Supabase URL/key are correct.');
   }
   log('INFO', 'students.list_success', { duration_ms: duration, count: data?.length || 0 });
   return data || [];
@@ -104,7 +105,7 @@ export async function addStudent(student) {
     supabase = getSupabaseClient();
   } catch (e) {
     log('ERROR', 'students.add_supabase_not_configured', { error: e.message });
-    throw new Error('Supabase not configured. Please set required environment variables.');
+    throw new Error('Supabase not configured. Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY (or REACT_APP_SUPABASE_KEY).');
   }
   const payload = sanitize(student);
   const start = Date.now();
@@ -137,7 +138,7 @@ export async function updateStudent(id, student) {
     supabase = getSupabaseClient();
   } catch (e) {
     log('ERROR', 'students.update_supabase_not_configured', { id, error: e.message });
-    throw new Error('Supabase not configured. Please set required environment variables.');
+    throw new Error('Supabase not configured. Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY (or REACT_APP_SUPABASE_KEY).');
   }
   const payload = sanitize(student);
   const start = Date.now();
@@ -162,7 +163,7 @@ export async function deleteStudent(id) {
     supabase = getSupabaseClient();
   } catch (e) {
     log('ERROR', 'students.delete_supabase_not_configured', { id, error: e.message });
-    throw new Error('Supabase not configured. Please set required environment variables.');
+    throw new Error('Supabase not configured. Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY (or REACT_APP_SUPABASE_KEY).');
   }
   const start = Date.now();
   const { error } = await supabase.from(TABLE).delete().eq('id', id);

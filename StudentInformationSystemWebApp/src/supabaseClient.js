@@ -5,13 +5,17 @@ import { createClient } from '@supabase/supabase-js';
  *
  * Required env vars (Create React App builds REACT_APP_* at compile-time):
  * - REACT_APP_SUPABASE_URL
- * - REACT_APP_SUPABASE_ANON_KEY
+ * - REACT_APP_SUPABASE_ANON_KEY (preferred) OR REACT_APP_SUPABASE_KEY (fallback)
  *
  * Never hardcode secrets. This module only logs minimal, non-sensitive diagnostics.
  */
 
+// Prefer the explicitly named ANON_KEY, but allow KEY as a fallback to match some environments.
 const RAW_URL = process.env.REACT_APP_SUPABASE_URL;
-const RAW_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY;
+const RAW_KEY =
+  process.env.REACT_APP_SUPABASE_ANON_KEY ||
+  process.env.REACT_APP_SUPABASE_KEY ||
+  process.env.SUPABASE_ANON_KEY; // last-resort fallback for some hosts
 
 /**
  * Mask a secret for logging (only show prefix length).
@@ -36,10 +40,10 @@ function validateEnv(url, key) {
   }
 
   if (!key) {
-    issues.push('REACT_APP_SUPABASE_ANON_KEY is missing');
+    issues.push('Missing anon key: set REACT_APP_SUPABASE_ANON_KEY (preferred) or REACT_APP_SUPABASE_KEY');
   } else if (String(key).length < 20) {
     // anon keys are typically much longer; this helps catch accidental short values
-    issues.push('REACT_APP_SUPABASE_ANON_KEY seems too short');
+    issues.push('Supabase anon key seems too short');
   }
 
   return issues;
@@ -49,8 +53,8 @@ function validateEnv(url, key) {
  * Print non-sensitive diagnostics one time to assist developers.
  */
 function logDiagnosticsOnce(url, key, issues) {
-  if (window.__SIS_SUPABASE_DIAG_LOGGED__) return;
-  window.__SIS_SUPABASE_DIAG_LOGGED__ = true;
+  if (typeof window !== 'undefined' && window.__SIS_SUPABASE_DIAG_LOGGED__) return;
+  if (typeof window !== 'undefined') window.__SIS_SUPABASE_DIAG_LOGGED__ = true;
 
   // eslint-disable-next-line no-console
   console.info('[SIS] Supabase env diagnostics', {
@@ -58,13 +62,20 @@ function logDiagnosticsOnce(url, key, issues) {
     url_preview: url ? (String(url).startsWith('http') ? new URL(url).origin : 'invalid') : 'missing',
     anon_key_present: Boolean(key),
     anon_key_preview: key ? maskSecret(key) : 'missing',
+    key_source: process.env.REACT_APP_SUPABASE_ANON_KEY
+      ? 'REACT_APP_SUPABASE_ANON_KEY'
+      : process.env.REACT_APP_SUPABASE_KEY
+      ? 'REACT_APP_SUPABASE_KEY'
+      : process.env.SUPABASE_ANON_KEY
+      ? 'SUPABASE_ANON_KEY'
+      : 'missing',
     issues
   });
 
   if (issues.length > 0) {
     // eslint-disable-next-line no-console
     console.warn(
-      '[SIS] Missing/invalid Supabase configuration. Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY in your .env before building.'
+      '[SIS] Missing/invalid Supabase configuration. Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY (or REACT_APP_SUPABASE_KEY) in your .env before building.'
     );
   }
 }
