@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import FormError from "./FormError";
 import { validateStudentForm } from "../utils/validation";
+import { logMinimalError } from "../services/errorMapping";
 
 /**
  * PUBLIC_INTERFACE
@@ -53,12 +54,19 @@ export default function StudentForm({
   };
 
   const handleBlur = () => {
-    runValidation();
+    const valid = runValidation();
+    if (!valid) {
+      logMinimalError("StudentForm.blurValidation", { code: "FIELD_ERRORS" });
+    }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!runValidation()) return;
+    if (!runValidation()) {
+      // Minimal logging to indicate validation prevented submit
+      logMinimalError("StudentForm.submitBlocked", { code: "VALIDATION_FAILED" });
+      return;
+    }
     const payload = {
       ...form,
       age: form.age === "" ? null : Number(form.age)

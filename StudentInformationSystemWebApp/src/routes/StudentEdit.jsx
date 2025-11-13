@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import StudentForm from "../components/StudentForm";
 import { getStudentById, updateStudent } from "../services/studentService";
 import { uniquenessHintForEmail } from "../utils/validation";
+import { mapSupabaseErrorToMessage, logMinimalError } from "../services/errorMapping";
 
 /**
  * Edit page for updating an existing student
@@ -50,10 +51,12 @@ export default function StudentEdit() {
       await updateStudent(id, updates);
       navigate("/");
     } catch (err) {
-      // eslint-disable-next-line no-alert
-      const msg = err?.message || "Update failed";
+      // Map error to friendly message and log minimally
+      const base = mapSupabaseErrorToMessage(err, { action: "update" });
+      logMinimalError("StudentEdit.update", err);
       const enhanced =
-        msg.toLowerCase().includes("unique") ? `${msg}\n\n${uniquenessHintForEmail()}` : msg;
+        base.toLowerCase().includes("unique") ? `${base}\n\n${uniquenessHintForEmail()}` : base;
+      // eslint-disable-next-line no-alert
       alert(enhanced);
     } finally {
       setSubmitting(false);

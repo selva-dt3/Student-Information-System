@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import StudentForm from "../components/StudentForm";
 import { createStudent } from "../services/studentService";
 import { uniquenessHintForEmail } from "../utils/validation";
+import { mapSupabaseErrorToMessage, logMinimalError } from "../services/errorMapping";
 
 /**
  * Create page for adding a new student
@@ -17,11 +18,12 @@ export default function StudentCreate() {
       await createStudent(payload);
       navigate("/");
     } catch (err) {
-      // eslint-disable-next-line no-alert
-      const msg = err?.message || "Create failed";
-      // If generic uniqueness message, append a friendly hint
+      // Map error using centralized mapping and log minimally
+      const base = mapSupabaseErrorToMessage(err, { action: "creation" });
+      logMinimalError("StudentCreate.create", err);
       const enhanced =
-        msg.toLowerCase().includes("unique") ? `${msg}\n\n${uniquenessHintForEmail()}` : msg;
+        base.toLowerCase().includes("unique") ? `${base}\n\n${uniquenessHintForEmail()}` : base;
+      // eslint-disable-next-line no-alert
       alert(enhanced);
     } finally {
       setSubmitting(false);

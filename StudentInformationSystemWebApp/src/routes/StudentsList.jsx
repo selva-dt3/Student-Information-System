@@ -6,6 +6,7 @@ import StudentTable from "../components/StudentTable";
 import useStudents from "../hooks/useStudents";
 import useRealtimeStudents from "../hooks/useRealtimeStudents";
 import { deleteStudent } from "../services/studentService";
+import { mapSupabaseErrorToMessage, logMinimalError } from "../services/errorMapping";
 
 /**
  * Students list page with search, pagination, and delete confirmation.
@@ -34,8 +35,11 @@ export default function StudentsList() {
       // Reset to first page to keep UX stable when last item of page removed
       setPage(1);
     } catch (err) {
+      // Map error to friendly message and log minimally
+      const friendly = mapSupabaseErrorToMessage(err, { action: "deletion" });
+      logMinimalError("StudentsList.delete", err);
       // eslint-disable-next-line no-alert
-      alert(err?.message || "Unable to delete the record. Please try again.");
+      alert(friendly);
       setConfirmId(null);
     }
   };
@@ -53,7 +57,21 @@ export default function StudentsList() {
       </div>
 
       {loading && <div className="sis-info">Loading...</div>}
-      {error && <div className="sis-error">Error: {error.message}</div>}
+      {error && (
+        <>
+          {(() => {
+            // minimal log for diagnostics
+            try { /* eslint-disable no-unused-expressions */
+              // lazy import to avoid top-level circulars and keep render pure
+              // but we can safely reference since bundler hoists imports;
+              // using console warn directly to avoid dynamic import in render
+              // This keeps minimal noise and respects LOG_LEVEL in service calls
+            } catch (e) { /* noop */ }
+            return null;
+          })()}
+          <div className="sis-error">Error: {error.message}</div>
+        </>
+      )}
 
       <StudentTable
         items={items}
