@@ -1,6 +1,15 @@
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+// Mock env to provide minimal values and reduce console noise during tests
+jest.mock("../../config/env", () => ({
+  getEnv: () => ({
+    SUPABASE_URL: "http://test.local",
+    SUPABASE_ANON_KEY: "anon",
+    FEATURE_FLAGS: [],
+    LOG_LEVEL: "error",
+  }),
+}));
 import StudentsList from "../StudentsList";
 
 // Mock useStudents to control list data and fetch behavior
