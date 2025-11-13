@@ -1,82 +1,61 @@
-# Lightweight React Template for KAVIA
+# Student Information System (React + Supabase)
 
-This project provides a minimal React template with a clean, modern UI and minimal dependencies.
+A lightweight single-page app to manage students with a responsive, green-themed UI and accessible forms. It uses Supabase as the backend for CRUD.
 
 ## Features
 
-- **Lightweight**: No heavy UI frameworks - uses only vanilla CSS and React
-- **Modern UI**: Clean, responsive design with KAVIA brand styling
-- **Fast**: Minimal dependencies for quick loading times
-- **Simple**: Easy to understand and modify
+- Students list with pagination, search, and inline actions
+- Create and edit forms with client-side validation
+- Delete with confirmation dialog
+- Optional realtime placeholder gated by feature flag
+- Theming with light/dark toggle
+- Minimal dependencies
 
-## Getting Started
+## Quick Start
 
-In the project directory, you can run:
-
-### `npm start`
-
-Runs the app in development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
-
-### `npm test`
-
-Launches the test runner in interactive watch mode.
-
-### `npm run build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-## Customization
-
-### Colors
-
-The main brand colors are defined as CSS variables in `src/App.css`:
-
-```css
-:root {
-  --kavia-orange: #E87A41;
-  --kavia-dark: #1A1A1A;
-  --text-color: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.7);
-  --border-color: rgba(255, 255, 255, 0.1);
-}
+1) Copy environment template and fill Supabase values:
 ```
+cp .env.example .env
+```
+Set:
+- REACT_APP_SUPABASE_URL
+- REACT_APP_SUPABASE_ANON_KEY
 
-### Components
+Optional:
+- REACT_APP_FEATURE_FLAGS=realtime (enables placeholder hook for future live updates)
 
-This template uses pure HTML/CSS components instead of a UI framework. You can find component styles in `src/App.css`. 
+2) Install and run:
+```
+npm install
+npm start
+```
+Open http://localhost:3000
 
-Common components include:
-- Buttons (`.btn`, `.btn-large`)
-- Container (`.container`)
-- Navigation (`.navbar`)
-- Typography (`.title`, `.subtitle`, `.description`)
+## CRUD Usage
 
-## Learn More
+- List: Home route "/" shows students with search box and paging controls
+- Create: Click "+ New Student" (or "Add" in navbar), fill Name, Email, Age -> Save
+- Edit: On list, use "Edit" per row to update existing record
+- Delete: On list, click "Delete" per row and confirm in the dialog
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Table schema expected in Supabase: students(id, name, email, age, created_at)
 
-### Code Splitting
+## Project Structure
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+- src/App.js: Routes, pages, and UI components (SearchBar, ConfirmDialog, StudentTable, StudentForm)
+- src/services/studentService.js: Supabase CRUD operations
+- src/lib/supabaseClient.js: Client initialization from env
+- src/config/env.js: Environment handling and validation
+- src/App.css: Green theme styles and responsive components
 
-### Analyzing the Bundle Size
+## Scripts
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+- npm start: Dev server
+- npm test: Run tests
+- npm run build: Production build
+- npm run lint: Basic linting
 
-### Making a Progressive Web App
+## Notes
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- Ensure your Supabase table "students" exists and fields match the UI.
+- For realtime, keep REACT_APP_FEATURE_FLAGS=realtime to allow future subscription integration.
