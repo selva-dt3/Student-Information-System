@@ -1,104 +1,128 @@
-/* CSS Variables for Theme Management */
-:root {
-  /* Light theme colors */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --text-primary: #282c34;
-  --text-secondary: #61dafb;
-  --border-color: #e9ecef;
-  --button-bg: #007bff;
-  --button-text: #ffffff;
+/* Green themed SIS styles and variables */
+:root{
+  --bg-primary:#ffffff;
+  --bg-secondary:#f6fdf7;
+  --surface:#ffffff;
+  --text-primary:#16301b;
+  --text-secondary:#2f6d38;
+  --border-color:#d9eadb;
+  --accent:#2ecc71;
+  --accent-dark:#239b56;
+  --danger:#e74c3c;
+  --muted:#6c757d;
 }
 
-[data-theme="dark"] {
-  /* Dark theme colors */
-  --bg-primary: #1a1a1a;
-  --bg-secondary: #282c34;
-  --text-primary: #ffffff;
-  --text-secondary: #61dafb;
-  --border-color: #404040;
-  --button-bg: #0056b3;
-  --button-text: #ffffff;
+[data-theme="dark"]{
+  --bg-primary:#0e1711;
+  --bg-secondary:#0f2014;
+  --surface:#18261c;
+  --text-primary:#eaf5ed;
+  --text-secondary:#9fe5b1;
+  --border-color:#21412a;
+  --accent:#34d27b;
+  --accent-dark:#26a35b;
+  --danger:#ff6b5a;
+  --muted:#a7b1a8;
 }
 
-.App {
-  text-align: center;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  min-height: 100vh;
-  transition: background-color 0.3s ease, color 0.3s ease;
+*{box-sizing:border-box}
+
+html, body, #root, .App{
+  min-height:100%;
+  background:var(--bg-primary);
+  color:var(--text-primary);
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.App{
+  transition: background-color .2s ease, color .2s ease;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+/* Navbar */
+.sis-navbar{
+  background:var(--surface);
+  border-bottom:1px solid var(--border-color);
+  position:sticky; top:0; z-index:10;
 }
-
-.App-header {
-  background-color: var(--bg-secondary);
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: var(--text-primary);
-  transition: background-color 0.3s ease;
-  position: relative;
+.sis-nav-inner{
+  max-width:1000px; margin:0 auto; padding:12px 16px;
+  display:flex; align-items:center; justify-content:space-between;
 }
-
-.App-link {
-  color: var(--text-secondary);
-  transition: color 0.3s ease;
+.sis-brand{
+  font-weight:800; color:var(--text-secondary); text-decoration:none; font-size:20px;
 }
+.sis-nav-actions{ display:flex; gap:8px; align-items:center; }
 
-.theme-toggle {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background-color: var(--button-bg);
-  color: var(--button-text);
+/* Main container */
+.sis-main{ max-width:1000px; margin:0 auto; padding:20px 16px; }
+.sis-container{ display:flex; flex-direction:column; gap:16px; }
+.sis-header{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.sis-title{ margin:0; font-size:22px; }
+.sis-header-actions{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+
+/* Inputs */
+.sis-input{
+  background:var(--surface);
+  border:1px solid var(--border-color);
+  border-radius:8px;
+  padding:10px 12px; color:var(--text-primary);
+  outline:none; width:100%;
+}
+.sis-input:focus{ border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in hsl, var(--accent) 20%, transparent); }
+
+/* Buttons */
+.btn{ border:none; padding:8px 12px; border-radius:8px; cursor:pointer; background:var(--surface); color:var(--text-primary); border:1px solid var(--border-color);}
+.btn:hover{ filter:brightness(0.98);}
+.btn:disabled{ opacity:.6; cursor:not-allowed; }
+.btn-primary{ background:var(--accent); color:white; border-color:var(--accent-dark); }
+.btn-primary:hover{ background:var(--accent-dark); }
+.btn-secondary{ background:transparent; border:1px solid var(--border-color); }
+.btn-danger{ background:var(--danger); color:white; border-color:#b3392c; }
+.btn-link{ background:transparent; border:none; color:var(--text-secondary); }
+
+/* Cards */
+.sis-card{ background:var(--surface); border:1px solid var(--border-color); border-radius:12px; overflow:hidden; }
+
+/* Table */
+.sis-table-responsive{ width:100%; overflow:auto; }
+.sis-table{ width:100%; border-collapse:collapse; }
+.sis-table th, .sis-table td{ padding:12px; border-bottom:1px solid var(--border-color); }
+.sis-table th{ background:var(--bg-secondary); color:var(--text-secondary); }
+.sis-table-actions{ display:flex; gap:8px; justify-content:flex-start; }
+
+/* Pagination */
+.sis-pagination{ display:flex; align-items:center; justify-content:flex-end; gap:12px; padding:12px; }
+.sis-page-indicator{ color:var(--muted); }
+
+/* Form */
+.sis-form{ background:var(--surface); border:1px solid var(--border-color); border-radius:12px; padding:16px; max-width:520px; }
+.sis-form-row{ display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+.sis-form-row label{ font-weight:600; }
+.sis-error{ color:var(--danger); font-size:0.9rem; }
+.sis-info{ color:var(--text-secondary); }
+
+/* Modal */
+.sis-modal-backdrop{
+  position:fixed; inset:0; background:rgba(0,0,0,.4); display:flex; align-items:center; justify-content:center;
+}
+.sis-modal{ background:var(--surface); border:1px solid var(--border-color); border-radius:12px; padding:16px; width:min(420px, 92vw); }
+.sis-actions{ display:flex; gap:8px; }
+
+/* Theme toggle button reused */
+.theme-toggle{
+  background-color: var(--accent);
+  color: #ffffff;
   border: none;
   border-radius: 8px;
-  padding: 10px 20px;
+  padding: 8px 12px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,.08);
 }
+.theme-toggle:hover{ background-color: var(--accent-dark); }
 
-.theme-toggle:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  opacity: 0.9;
-}
-
-.theme-toggle:active {
-  transform: translateY(0);
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* Responsive design for mobile */
-@media (max-width: 768px) {
-  .theme-toggle {
-    top: 10px;
-    right: 10px;
-    padding: 8px 16px;
-    font-size: 12px;
-  }
+/* Responsive tweaks */
+@media (max-width:768px){
+  .sis-header{ flex-direction:column; align-items:flex-start; }
 }
